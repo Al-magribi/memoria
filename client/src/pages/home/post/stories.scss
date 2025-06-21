@@ -1,0 +1,116 @@
+.stories-wrapper {
+  position: relative;
+  padding: 0 10px;
+
+  .stories-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 2rem;
+    color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+
+  .stories-nav.left {
+    left: 10px;
+  }
+  .stories-nav.right {
+    right: 10px;
+  }
+  .stories-nav:hover {
+    opacity: 1;
+  }
+  .stories {
+    height: 200px;
+    width: 100%;
+    display: flex;
+    overflow-x: hidden;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    .story {
+      flex: 0 0 140px;
+      width: 140px;
+      height: 180px;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid transparent;
+      transition: border 0.2s;
+      background: var(--bg-color, #222);
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .story-avatar,
+      .create-story-icon {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+      }
+      .story-avatar {
+        border: 3px solid #1877f2;
+        padding: 2px;
+        background: #fff;
+        img {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+      }
+      .create-story-icon {
+        border: 3px solid #1877f2;
+        font-size: 2rem;
+        color: #1877f2;
+        background: #fff;
+        span {
+          font-weight: bold;
+        }
+      }
+      .story-name {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        text-align: center;
+        padding: 8px 0 4px 0;
+        p {
+          color: #fff;
+          font-weight: 500;
+          margin: 0;
+          font-size: 1rem;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+      }
+    }
+  }
+}

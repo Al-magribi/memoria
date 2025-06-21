@@ -1,0 +1,50 @@
+.layout {
+  height: 100vh;
+  background-color: var(--home-bg);
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .layout-content {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+  }
+
+  .layout-main {
+    flex: 2;
+    min-width: 0; // Prevents flex item from overflowing
+  }
+}
+
+// Tablet
+@media (max-width: 1024px) {
+  .layout-content {
+    gap: 10px;
+    padding: 8px;
+  }
+  .layout-main {
+    flex: 3;
+  }
+}
+
+// Mobile
+@media (max-width: 600px) {
+  .layout-content {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+  .layout-main {
+    flex: none;
+    width: 100%;
+  }
+  .LeftBar,
+  .RightBar {
+    display: none !important;
+  }
+}

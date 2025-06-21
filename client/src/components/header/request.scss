@@ -1,0 +1,102 @@
+.request {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px var(--shadow-color);
+  padding: 15px;
+  min-width: 300px;
+  display: none;
+  z-index: 1000;
+
+  h3 {
+    margin: 0 0 15px 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+  }
+
+  .request-list {
+    .request-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+
+        img {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .user-details {
+          .name {
+            margin: 0;
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 0.95rem;
+          }
+
+          .mutual {
+            margin: 4px 0 0 0;
+            color: var(--text-color);
+            font-size: 0.8rem;
+          }
+        }
+
+        .request-actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+
+          button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            gap: 6px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+
+          .accept-btn {
+            background-color: var(--menu-item-color-hover);
+            color: white;
+
+            &:hover {
+              opacity: 0.9;
+            }
+          }
+
+          .reject-btn {
+            background-color: var(--input-bg);
+            color: #ff4757;
+            border: 1px solid #ff4757;
+
+            &:hover {
+              background-color: #ff4757;
+              color: white;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.message-btn:hover .request {
+  display: block;
+}

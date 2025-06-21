@@ -1,0 +1,321 @@
+.post-add {
+  background: var(--bg-color); // Card background, otomatis dark/light
+  border-radius: 10px; // Sudut membulat
+  box-shadow: 0 2px 12px 0 var(--shadow-color); // Bayangan halus
+  padding: 16px 20px 12px 20px; // Reduced padding for mobile
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  // Mobile-first responsive design
+  @media (min-width: 768px) {
+    padding: 20px 24px 16px 24px; // Larger padding for desktop
+  }
+
+  // Header: foto profil dan placeholder
+  .post-add-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px; // Reduced gap for mobile
+    margin-bottom: 8px;
+
+    @media (min-width: 768px) {
+      gap: 16px; // Larger gap for desktop
+    }
+
+    .image {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      flex-shrink: 0; // Prevent image from shrinking
+
+      img {
+        width: 40px; // Slightly smaller for mobile
+        height: 40px;
+        border-radius: 50%; // Foto profil bulat
+        object-fit: cover;
+
+        @media (min-width: 768px) {
+          width: 44px; // Larger for desktop
+          height: 44px;
+        }
+      }
+    }
+
+    textarea {
+      width: 100%;
+      height: auto;
+      border: none;
+      outline: none;
+      font-size: 1rem; // Better mobile readability
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-weight: 400;
+      opacity: 0.95;
+      resize: none;
+      overflow: auto;
+      padding: 0;
+      margin: 0;
+      min-height: 40px; // Minimum height for better UX
+      line-height: 1.4; // Better line spacing
+
+      @media (min-width: 768px) {
+        font-size: 1.08rem; // Larger for desktop
+      }
+
+      &::placeholder {
+        color: var(--text-color);
+        opacity: 0.6;
+      }
+    }
+  }
+
+  // Garis pemisah tipis
+  .post-divider {
+    border: none;
+    border-top: 1px solid var(--border-color); // Pakai variable agar darkmode
+    margin: 0 0 12px 0;
+  }
+
+  // Baris aksi (Add Image, Add Place, Tag Friends, Share)
+  .post-add-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 6px; // Reduced gap for mobile
+    width: 100%;
+    margin-top: 0;
+    position: relative;
+    flex-wrap: wrap; // Allow wrapping on very small screens
+
+    @media (min-width: 768px) {
+      gap: 8px; // Larger gap for desktop
+      flex-wrap: nowrap; // No wrapping on desktop
+    }
+
+    // Tombol aksi (Add Image, Add Place, Tag Friends)
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px; // Reduced gap for mobile
+      background: none;
+      border: none;
+      color: var(--text-color); // Teks tombol
+      font-size: 0.9rem; // Smaller font for mobile
+      font-weight: 500;
+      padding: 8px 12px; // Larger touch target for mobile
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+      min-height: 44px; // Minimum touch target size
+      white-space: nowrap; // Prevent text wrapping
+
+      @media (min-width: 768px) {
+        gap: 6px; // Larger gap for desktop
+        font-size: 0.98rem; // Larger font for desktop
+        padding: 6px 10px; // Smaller padding for desktop
+        min-height: auto; // Remove min-height on desktop
+      }
+
+      &:hover {
+        background: var(--post-add-bg); // Hover pakai variable agar darkmode
+      }
+
+      &:active {
+        background: var(--post-add-bg); // Active state for mobile
+        transform: scale(0.98); // Subtle press effect
+      }
+
+      // Ikon pada tombol aksi
+      .icon {
+        display: inline-block;
+        width: 20px; // Slightly smaller for mobile
+        height: 20px;
+        border-radius: 4px;
+        margin-right: 2px;
+        flex-shrink: 0; // Prevent icon from shrinking
+
+        @media (min-width: 768px) {
+          width: 22px; // Larger for desktop
+          height: 22px;
+        }
+      }
+
+      // Ikon Add Image
+      .image-icon {
+        background: #e3f3f8;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%2300bcd4" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-2 0H5V5h14v14zm-7-3.5l2.5 3.01L17 15l4 5H3l5-6.5 3 3.5z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      // Ikon Tag Friends
+      .tag-icon {
+        background: #e3e8f8;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%233f51b5" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h11c.67 0 1.27-.33 1.63-.84l3.58-5.16c.41-.59.41-1.37 0-1.96l-3.58-5.16zM5 19V7h11l3.55 5.12L16 17H5zm7-7c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    // Tombol Share (pojok kanan bawah)
+    .share-btn {
+      margin-left: auto;
+      background: #4664e4;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px; // Larger touch target for mobile
+      font-size: 0.9rem; // Smaller font for mobile
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(70, 100, 228, 0.08);
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      @media (min-width: 768px) {
+        padding: 6px 18px; // Smaller padding for desktop
+        font-size: 0.98rem;
+      }
+
+      &:hover:not(:disabled) {
+        background: #3451c6;
+      }
+
+      &:active:not(:disabled) {
+        background: #2a4196; // Darker active state
+        transform: scale(0.98); // Subtle press effect
+      }
+
+      &:disabled {
+        background: #ccc;
+        color: #666;
+        cursor: not-allowed;
+        box-shadow: none;
+
+        &:hover {
+          background: #ccc;
+          transform: none;
+        }
+      }
+    }
+  }
+}
+
+.media-preview {
+  margin-bottom: 12px;
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+
+  // Mobile-optimized media preview layout
+  @media (max-width: 767px) {
+    width: calc(50% - 6px); // 2 columns on mobile
+    margin-bottom: 8px;
+
+    &:nth-child(odd) {
+      margin-right: 6px;
+    }
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    max-height: 280px; // Slightly smaller for mobile
+    border-radius: 8px;
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+
+    @media (min-width: 768px) {
+      max-height: 320px; // Larger for desktop
+    }
+  }
+
+  .remove-media-btn {
+    position: absolute;
+    top: 8px; // Slightly larger touch target
+    right: 8px;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.7); // Slightly more opaque
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px; // Larger touch target
+    height: 32px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s;
+
+    @media (min-width: 768px) {
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    &:active {
+      background: rgba(0, 0, 0, 0.9);
+      transform: scale(0.95);
+    }
+  }
+}
+
+// Additional mobile optimizations
+@media (max-width: 480px) {
+  .post-add {
+    padding: 12px 16px 8px 16px; // Even smaller padding for very small screens
+
+    .post-add-header {
+      gap: 10px;
+
+      .image img {
+        width: 36px;
+        height: 36px;
+      }
+
+      textarea {
+        font-size: 0.95rem;
+      }
+    }
+
+    .post-add-actions-row {
+      gap: 4px;
+
+      .action-btn {
+        padding: 6px 8px;
+        font-size: 0.85rem;
+
+        .icon {
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .share-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .media-preview {
+    width: 100%; // Single column on very small screens
+    margin-right: 0;
+  }
+}

@@ -1,0 +1,11 @@
+.post {
+  height: 100%; // Subtract header height
+  overflow-y: auto;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
