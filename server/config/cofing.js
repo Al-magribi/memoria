@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const uri = "mongodb://memoria:JsZRPACy3yX7bBA7@212.85.24.143/memoria";
+const uri = process.env.MONGOURI;
 
 // Function to get current time in Indonesian WIB format
 function getCurrentTimeWIB() {
