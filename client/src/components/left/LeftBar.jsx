@@ -2,6 +2,7 @@ import React from "react";
 import * as Fa from "react-icons/fa";
 import "./leftbar.scss";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export const leftBarMenus = [
   { icon: <Fa.FaHome />, label: "Home", path: "/" },
@@ -15,14 +16,10 @@ const LeftBar = () => {
   const navigate = useNavigate();
   const pathname = useLocation().pathname;
 
+  const { user } = useSelector((state) => state.user);
+
   // Hanya render di desktop
   if (window.innerWidth <= 1024) return null;
-
-  const user = {
-    name: "Jadid Al Magribi",
-    title: "Full Stack Developer",
-    profilePicture: "./user-1.jpg",
-  };
 
   return (
     <div className='flex-1 left-bar'>
@@ -30,10 +27,10 @@ const LeftBar = () => {
         {/* Profile Section */}
         <div className='profile-section'>
           <div className='profile-header'>
-            <img src={user.profilePicture} alt='user' />
+            <img src={user?.profilePicture} alt='user' />
             <div className='profile-info'>
-              <h3>{user.name}</h3>
-              <span className='profile-title'>{user.title}</span>
+              <h3>{user?.fullName}</h3>
+              <span className='profile-title'>{user?.bio}</span>
             </div>
           </div>
         </div>

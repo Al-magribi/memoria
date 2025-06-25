@@ -3,6 +3,7 @@ import { IoIosMore } from "react-icons/io";
 import { MdShare } from "react-icons/md";
 import { FaRegHeart, FaRegComment } from "react-icons/fa";
 import CommentSection from "../comment/CommentSection";
+import { useGetFeedPostsQuery } from "../../../services/api/post/PostApi";
 
 /**
  * POST LISTS COMPONENT
@@ -41,6 +42,9 @@ const PostLists = () => {
    * - likedBy: Array ID user yang sudah like
    * - replies: Array reply komentar (nested)
    */
+
+  const { data, isLoading, error } = useGetFeedPostsQuery();
+  console.log(data);
   const posts = [
     {
       id: 1,

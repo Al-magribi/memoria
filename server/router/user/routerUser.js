@@ -1,7 +1,37 @@
 import express from "express";
-import User from "../models/UserSchema.js";
-import { verify } from "../middleware/verify.js";
+import User from "../../models/UserSchema.js";
+import { verify } from "../../middleware/verify.js";
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./server/assets/profiles");
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const extension = path.extname(file.originalname);
+    const filename = `${timestamp}${extension}`;
+    cb(null, filename);
+  },
+});
+
+const postStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./server/assets/posts");
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const extension = path.extname(file.originalname);
+    const filename = `${timestamp}${extension}`;
+    cb(null, filename);
+  },
+});
+
+const profileUpload = multer({ storage: profileStorage });
+const postUpload = multer({ storage: postStorage });
 
 const router = express.Router();
 
@@ -79,6 +109,7 @@ router.post("/signin", async (req, res) => {
 
     // Find user by username or email
     const user = await User.findByUsernameOrEmail(identifier);
+
     if (!user) {
       return res.status(401).json({
         message: "Invalid credentials",
@@ -120,10 +151,8 @@ router.post("/signin", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Error logging in",
-      error: error.message,
-    });
+    console.log(error);
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -166,6 +195,8 @@ router.put("/profile/:userId", verify(), async (req, res) => {
       education,
       website,
       phone,
+      username,
+      email,
     } = req.body;
 
     // Check if user is updating their own profile
@@ -195,6 +226,8 @@ router.put("/profile/:userId", verify(), async (req, res) => {
     if (education !== undefined) updateFields.education = education;
     if (website !== undefined) updateFields.website = website;
     if (phone !== undefined) updateFields.phone = phone;
+    if (username !== undefined) updateFields.username = username;
+    if (email !== undefined) updateFields.email = email;
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
       new: true,
@@ -208,50 +241,6 @@ router.put("/profile/:userId", verify(), async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error updating profile",
-      error: error.message,
-    });
-  }
-});
-
-// Update profile pictures - requires authentication
-router.put("/profile/:userId/pictures", verify(), async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { profilePicture, coverPhoto } = req.body;
-
-    // Check if user is updating their own profile
-    if (req.user._id.toString() !== userId) {
-      return res.status(403).json({
-        message: "You can only update your own profile pictures",
-      });
-    }
-
-    const updateFields = {};
-    if (profilePicture !== undefined)
-      updateFields.profilePicture = profilePicture;
-    if (coverPhoto !== undefined) updateFields.coverPhoto = coverPhoto;
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
-      new: true,
-    });
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    res.json({
-      message: "Profile pictures updated successfully",
-      user: {
-        id: updatedUser._id,
-        profilePicture: updatedUser.profilePicture,
-        coverPhoto: updatedUser.coverPhoto,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error updating profile pictures",
       error: error.message,
     });
   }
@@ -345,6 +334,139 @@ router.put("/profile/:userId/privacy", verify(), async (req, res) => {
     });
   }
 });
+
+// ========================================
+// FILE UPLOAD ROUTES
+// ========================================
+
+// Upload profile picture - requires authentication
+router.post(
+  "/profile/upload-picture",
+  verify(),
+  profileUpload.single("profilePicture"),
+  async (req, res) => {
+    try {
+      const { userId } = req.query;
+      console.log("Upload request received for user:", userId);
+
+      if (!userId) {
+        return res.status(400).json({
+          message: "User ID is required",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          message: "No file uploaded",
+        });
+      }
+
+      // Get current user to check for existing profile picture
+      const currentUser = await User.findById(userId);
+      if (!currentUser) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      // Delete old profile picture if it exists
+      if (currentUser.profilePicture) {
+        const oldFileName = currentUser.profilePicture.split("/").pop();
+        const oldFilePath = path.join("./server/assets/profiles", oldFileName);
+
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+          console.log("Old profile picture deleted:", oldFileName);
+        }
+      }
+
+      // Update user's profile picture
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { profilePicture: `/assets/profiles/${req.file.filename}` },
+        { new: true }
+      );
+
+      res.json({
+        message: "Profile picture uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      res.status(500).json({
+        message: "Error uploading profile picture",
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Upload cover photo - requires authentication
+router.post(
+  "/profile/upload-cover",
+  verify(),
+  profileUpload.single("coverPhoto"),
+  async (req, res) => {
+    try {
+      const { userId } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({
+          message: "User ID is required",
+        });
+      }
+
+      // Check if user is uploading their own cover photo
+      if (req.user._id.toString() !== userId) {
+        return res.status(403).json({
+          message: "You can only upload your own cover photo",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          message: "No file uploaded",
+        });
+      }
+
+      // Get current user to check for existing cover photo
+      const currentUser = await User.findById(userId);
+      if (!currentUser) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      // Delete old cover photo if it exists
+      if (currentUser.coverPhoto) {
+        const oldFileName = currentUser.coverPhoto.split("/").pop();
+        const oldFilePath = path.join("./server/assets/profiles", oldFileName);
+
+        if (fs.existsSync(oldFilePath)) {
+          fs.unlinkSync(oldFilePath);
+          console.log("Old cover photo deleted:", oldFileName);
+        }
+      }
+
+      // Update user's cover photo
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { coverPhoto: `/assets/profiles/${req.file.filename}` },
+        { new: true }
+      );
+
+      res.json({
+        message: "Cover photo uploaded successfully",
+        coverPhoto: updatedUser.coverPhoto,
+      });
+    } catch (error) {
+      console.error("Error uploading cover photo:", error);
+      res.status(500).json({
+        message: "Error uploading cover photo",
+        error: error.message,
+      });
+    }
+  }
+);
 
 // ========================================
 // NOTIFICATION SETTINGS ROUTES

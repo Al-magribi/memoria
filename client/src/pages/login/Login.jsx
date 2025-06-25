@@ -46,6 +46,7 @@ const Login = () => {
         },
         error: {
           render({ data }) {
+            console.log(data);
             return data?.data?.message || "Login failed. Please try again.";
           },
         },
@@ -72,42 +73,42 @@ const Login = () => {
   }, [isSuccess, loginData, dispatch, navigate]);
 
   return (
-    <div className="login d-flex-center">
-      <div className="wrapper">
+    <div className='login d-flex-center'>
+      <div className='wrapper'>
         <h1>Sign In</h1>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="text"
-              placeholder="Username or Email"
-              name="identifier"
+              type='text'
+              placeholder='Username or Email'
+              name='identifier'
               value={data.identifier}
               onChange={handleChange}
               className={errors.identifier ? "error" : ""}
               disabled={isLoading}
             />
             {errors.identifier && (
-              <span className="error-text">{errors.identifier}</span>
+              <span className='error-text'>{errors.identifier}</span>
             )}
           </div>
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="password"
-              placeholder="Password"
-              name="password"
+              type='password'
+              placeholder='Password'
+              name='password'
               value={data.password}
               onChange={handleChange}
               className={errors.password ? "error" : ""}
               disabled={isLoading}
             />
             {errors.password && (
-              <span className="error-text">{errors.password}</span>
+              <span className='error-text'>{errors.password}</span>
             )}
           </div>
-          <button type="submit" className="btn-primary" disabled={isLoading}>
+          <button type='submit' className='btn-primary' disabled={isLoading}>
             {isLoading ? "Logging in..." : "Sign In"}
           </button>
-          <p className="signup-link">
+          <p className='signup-link'>
             Don't have an account?{" "}
             <span onClick={() => navigate("/signup")}>Sign up</span>
           </p>

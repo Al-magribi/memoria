@@ -1,15 +1,20 @@
 import React, { useRef, useState, useEffect } from "react";
 import { GrSend } from "react-icons/gr";
 import "./PostAdd.scss";
+import { useAddPostMutation } from "../../../services/api/post/PostApi";
+import { useSelector } from "react-redux";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_MEDIA = 10;
 
 const PostAdd = () => {
+  const { user } = useSelector((state) => state.user);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const [text, setText] = useState("");
   const [media, setMedia] = useState([]); // array of { file, url, type }
   const [isMobile, setIsMobile] = useState(false);
+  const [addPost, { isLoading, error, isSuccess }] = useAddPostMutation();
 
   // Detect mobile device
   useEffect(() => {
@@ -42,28 +47,28 @@ const PostAdd = () => {
   // Handle file input change with better mobile support
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    const newMedia = [];
-
+    let newMedia = [];
+    let totalMedia = media.length;
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
         alert(`File '${file.name}' size must be less than 10MB`);
         continue;
       }
-
+      if (totalMedia + newMedia.length >= MAX_MEDIA) {
+        alert(`Maximum ${MAX_MEDIA} media files allowed per post.`);
+        break;
+      }
       const url = URL.createObjectURL(file);
       const type = file.type.startsWith("image")
         ? "image"
         : file.type.startsWith("video")
         ? "video"
         : null;
-
       if (type) {
         newMedia.push({ file, url, type });
       }
     }
-
-    setMedia((prev) => [...prev, ...newMedia]);
-    // Reset input agar bisa pilih file yang sama lagi
+    setMedia((prev) => [...prev, ...newMedia].slice(0, MAX_MEDIA));
     e.target.value = null;
   };
 
@@ -78,43 +83,54 @@ const PostAdd = () => {
   };
 
   // Handle share button click
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!text.trim() && media.length === 0) {
       alert("Please add some text or media before sharing");
       return;
     }
 
-    // TODO: Implement actual sharing logic
-    console.log("Sharing post:", { text, media });
-    alert("Post shared successfully!");
+    const formData = new FormData();
+    formData.append("content", text);
+    // Append images and videos separately
+    media.forEach((m) => {
+      if (m.type === "image") {
+        formData.append("images", m.file);
+      } else if (m.type === "video") {
+        formData.append("videos", m.file);
+      }
+    });
+    // For now, send empty arrays/objects for taggedUsers and location
+    formData.append("taggedUsers", JSON.stringify([]));
+    formData.append("location", JSON.stringify({}));
 
-    // Reset form
-    setText("");
-    setMedia([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+    try {
+      await addPost(formData).unwrap();
+      // Reset form
+      setText("");
+      setMedia([]);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+    } catch (e) {
+      console.log(e);
+      // Error handled below
     }
   };
 
-  const user = {
-    name: "Jadid Al Magribi",
-    title: "Full Stack Developer",
-    profilePicture: "./user-1.jpg",
-  };
-
   return (
-    <div className="post-add">
-      <div className="post-add-header d-flex">
-        <div className="image">
-          <img src={user.profilePicture} alt="user" />
+    <div className='post-add'>
+      <div className='post-add-header d-flex'>
+        <div className='image'>
+          <img src={user.profilePicture} alt='user' />
         </div>
         <textarea
           ref={textareaRef}
-          type="text"
-          placeholder={`What's on your mind ${user.name}?`}
+          type='text'
+          placeholder={`What's on your mind ${user?.fullName}?`}
           value={text}
           onInput={handleTextareaInput}
           rows={1}
+          disabled={isLoading}
         />
       </div>
 
@@ -128,58 +144,74 @@ const PostAdd = () => {
           }}
         >
           {media.map((m, idx) => (
-            <div className="media-preview" key={m.url}>
+            <div className='media-preview' key={m.url}>
               <button
-                type="button"
+                type='button'
                 onClick={() => handleRemoveMedia(idx)}
-                className="remove-media-btn"
-                aria-label="Remove preview"
+                className='remove-media-btn'
+                aria-label='Remove preview'
+                disabled={isLoading}
               >
                 ×
               </button>
-              {m.type === "image" && <img src={m.url} alt="preview" />}
+              {m.type === "image" && <img src={m.url} alt='preview' />}
               {m.type === "video" && <video src={m.url} controls />}
             </div>
           ))}
         </div>
       )}
 
-      <hr className="post-divider" />
+      <hr className='post-divider' />
 
-      <div className="post-add-actions-row">
+      <div className='post-add-actions-row'>
         <button
-          type="button"
-          className="action-btn"
+          type='button'
+          className='action-btn'
           onClick={handleImageButtonClick}
-          aria-label="Add image or video"
+          aria-label='Add image or video'
+          disabled={isLoading}
         >
           <input
-            type="file"
-            className="file-input"
+            type='file'
+            className='file-input'
             ref={fileInputRef}
-            accept="image/*,video/*"
+            accept='image/*,video/*'
             multiple
             onChange={handleFileChange}
+            disabled={isLoading || media.length >= MAX_MEDIA}
           />
-          <span className="icon image-icon" />
+          <span className='icon image-icon' />
           {isMobile ? "Media" : "Add Image / Video"}
         </button>
 
-        <button type="button" className="action-btn" aria-label="Tag friends">
-          <span className="icon tag-icon" />
+        <button
+          type='button'
+          className='action-btn'
+          aria-label='Tag friends'
+          disabled={isLoading}
+        >
+          <span className='icon tag-icon' />
           {isMobile ? "Tag" : "Tag Friends"}
         </button>
 
         <button
-          type="button"
-          className="share-btn"
+          type='button'
+          className='share-btn'
           onClick={handleShare}
-          disabled={!text.trim() && media.length === 0}
-          aria-label="Share post"
+          disabled={(!text.trim() && media.length === 0) || isLoading}
+          aria-label='Share post'
         >
-          <GrSend />
+          {isLoading ? "Sharing..." : <GrSend />}
         </button>
       </div>
+      {error && (
+        <div className='error-message'>
+          {error.data?.message || "Failed to share post."}
+        </div>
+      )}
+      {isSuccess && (
+        <div className='success-message'>Post shared successfully!</div>
+      )}
     </div>
   );
 };
