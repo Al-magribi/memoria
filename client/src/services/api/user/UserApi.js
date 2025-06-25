@@ -13,7 +13,7 @@ export const UserApi = createApi({
       }),
       invalidatesTags: ["User"],
     }),
-    signin: builder.mutation({
+    login: builder.mutation({
       query: (body) => ({
         url: "/signin",
         method: "POST",
@@ -21,14 +21,45 @@ export const UserApi = createApi({
       }),
       invalidatesTags: ["User"],
     }),
-    loadUser: builder.query({
+    loadUser: builder.mutation({
       query: () => ({
-        url: "/loadUser",
+        url: "/load-user",
         method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    updateProfile: builder.mutation({
+      query: ({ userId, body }) => ({
+        url: `/profile/${userId}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
+    updatePrivacy: builder.mutation({
+      query: ({ userId, body }) => ({
+        url: `/profile/${userId}/privacy`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
+    updateNotifications: builder.mutation({
+      query: ({ userId, body }) => ({
+        url: `/profile/${userId}/notifications`,
+        method: "PUT",
+        body,
       }),
       invalidatesTags: ["User"],
     }),
   }),
 });
 
-export const { useRegisterMutation } = UserApi;
+export const {
+  useRegisterMutation,
+  useLoginMutation,
+  useLoadUserMutation,
+  useUpdateProfileMutation,
+  useUpdatePrivacyMutation,
+  useUpdateNotificationsMutation,
+} = UserApi;

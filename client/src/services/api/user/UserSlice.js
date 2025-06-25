@@ -9,7 +9,7 @@ const UserSlice = createSlice({
     isLoading: false,
   },
   reducers: {
-    setLogin: (state, action) => {
+    setUser: (state, action) => {
       state.user = action.payload;
       state.isSignin = true;
       state.isLoading = false;
@@ -28,14 +28,14 @@ const UserSlice = createSlice({
         state.isLoading = true;
       })
       .addMatcher(
-        UserApi.endpoints.signin.matchFulfilled,
+        UserApi.endpoints.login.matchFulfilled,
         (state, { payload }) => {
           (state.user = payload),
             (state.isSignin = true),
             (state.isLoading = false);
         }
       )
-      .addMatcher(UserApi.endpoints.signin.matchRejected, (state) => {
+      .addMatcher(UserApi.endpoints.login.matchRejected, (state) => {
         (state.isLoading = false), (state.isSignin = false);
       })
       .addMatcher(
@@ -48,5 +48,5 @@ const UserSlice = createSlice({
   },
 });
 
-export const { setLogin, setLogout, setLoading } = UserSlice.actions;
+export const { setUser, setLogout, setLoading } = UserSlice.actions;
 export default UserSlice.reducer;

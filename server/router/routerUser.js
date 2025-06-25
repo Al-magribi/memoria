@@ -1,5 +1,7 @@
 import express from "express";
-import User from "../model/userModel.js";
+import User from "../models/UserSchema.js";
+import { verify } from "../middleware/verify.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -19,6 +21,8 @@ router.post("/register", async (req, res) => {
       dateOfBirth,
       gender,
     } = req.body;
+
+    console.log(req.body);
 
     // Check if user already exists
     const existingUser = await User.findByUsernameOrEmail(username);
@@ -41,6 +45,16 @@ router.post("/register", async (req, res) => {
 
     await user.save();
 
+    const token = jwt.sign({ id: user._id }, process.env.SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production" ? true : false,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       message: "User registered successfully",
       user: {
@@ -53,10 +67,8 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Error registering user",
-      error: error.message,
-    });
+    console.log(error);
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -84,6 +96,16 @@ router.post("/signin", async (req, res) => {
     // Update last seen
     await user.updateLastSeen();
 
+    const token = jwt.sign({ id: user._id }, process.env.SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production" ? true : false,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       message: "Login successful",
       user: {
@@ -110,32 +132,26 @@ router.post("/signin", async (req, res) => {
 // ========================================
 
 // Get user profile
-router.get("/profile/:userId", async (req, res) => {
+router.get("/load-user", verify(), async (req, res) => {
   try {
-    const { userId } = req.params;
-    const requestingUserId = req.query.requestingUserId; // For privacy checks
+    const { id } = req.user;
 
-    const user = await User.getPublicProfile(userId, requestingUserId);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
         message: "User not found",
       });
     }
 
-    res.json({
-      message: "Profile retrieved successfully",
-      user,
-    });
+    res.json(user);
   } catch (error) {
-    res.status(500).json({
-      message: "Error retrieving profile",
-      error: error.message,
-    });
+    console.log(error);
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Update basic profile information
-router.put("/profile/:userId", async (req, res) => {
+// Update basic profile information - requires authentication
+router.put("/profile/:userId", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const {
@@ -151,6 +167,13 @@ router.put("/profile/:userId", async (req, res) => {
       website,
       phone,
     } = req.body;
+
+    // Check if user is updating their own profile
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own profile",
+      });
+    }
 
     const user = await User.findById(userId);
     if (!user) {
@@ -190,11 +213,18 @@ router.put("/profile/:userId", async (req, res) => {
   }
 });
 
-// Update profile pictures
-router.put("/profile/:userId/pictures", async (req, res) => {
+// Update profile pictures - requires authentication
+router.put("/profile/:userId/pictures", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { profilePicture, coverPhoto } = req.body;
+
+    // Check if user is updating their own profile
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own profile pictures",
+      });
+    }
 
     const updateFields = {};
     if (profilePicture !== undefined)
@@ -231,10 +261,17 @@ router.put("/profile/:userId/pictures", async (req, res) => {
 // PRIVACY SETTINGS ROUTES
 // ========================================
 
-// Get privacy settings
-router.get("/profile/:userId/privacy", async (req, res) => {
+// Get privacy settings - requires authentication
+router.get("/profile/:userId/privacy", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Check if user is accessing their own privacy settings
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only access your own privacy settings",
+      });
+    }
 
     const user = await User.findById(userId).select("privacy");
     if (!user) {
@@ -255,8 +292,8 @@ router.get("/profile/:userId/privacy", async (req, res) => {
   }
 });
 
-// Update privacy settings
-router.put("/profile/:userId/privacy", async (req, res) => {
+// Update privacy settings - requires authentication
+router.put("/profile/:userId/privacy", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const {
@@ -267,6 +304,13 @@ router.put("/profile/:userId/privacy", async (req, res) => {
       allowFriendRequests,
       allowMessages,
     } = req.body;
+
+    // Check if user is updating their own privacy settings
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own privacy settings",
+      });
+    }
 
     const updateFields = {};
     if (profileVisibility)
@@ -306,10 +350,17 @@ router.put("/profile/:userId/privacy", async (req, res) => {
 // NOTIFICATION SETTINGS ROUTES
 // ========================================
 
-// Get notification settings
-router.get("/profile/:userId/notifications", async (req, res) => {
+// Get notification settings - requires authentication
+router.get("/profile/:userId/notifications", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Check if user is accessing their own notification settings
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only access your own notification settings",
+      });
+    }
 
     const user = await User.findById(userId).select("notifications");
     if (!user) {
@@ -330,12 +381,19 @@ router.get("/profile/:userId/notifications", async (req, res) => {
   }
 });
 
-// Update notification settings
-router.put("/profile/:userId/notifications", async (req, res) => {
+// Update notification settings - requires authentication
+router.put("/profile/:userId/notifications", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { email, push, sms, friendRequests, messages, likes, comments } =
       req.body;
+
+    // Check if user is updating their own notification settings
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own notification settings",
+      });
+    }
 
     const updateFields = {};
     if (email !== undefined) updateFields["notifications.email"] = email;
@@ -375,8 +433,8 @@ router.put("/profile/:userId/notifications", async (req, res) => {
 // USER SEARCH AND DISCOVERY ROUTES
 // ========================================
 
-// Search users
-router.get("/search", async (req, res) => {
+// Search users - requires authentication
+router.get("/search", verify(), async (req, res) => {
   try {
     const { q, limit = 10, skip = 0, privacy = "public" } = req.query;
 
@@ -409,8 +467,8 @@ router.get("/search", async (req, res) => {
   }
 });
 
-// Get user statistics
-router.get("/profile/:userId/stats", async (req, res) => {
+// Get user statistics - requires authentication
+router.get("/profile/:userId/stats", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -440,11 +498,18 @@ router.get("/profile/:userId/stats", async (req, res) => {
   }
 });
 
-// Update user statistics (for internal use)
-router.put("/profile/:userId/stats", async (req, res) => {
+// Update user statistics (for internal use) - requires authentication
+router.put("/profile/:userId/stats", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { field, increment = 1 } = req.body;
+
+    // Check if user is updating their own stats
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own statistics",
+      });
+    }
 
     const user = await User.findById(userId);
     if (!user) {
@@ -471,11 +536,18 @@ router.put("/profile/:userId/stats", async (req, res) => {
 // ACCOUNT MANAGEMENT ROUTES
 // ========================================
 
-// Change password
-router.put("/profile/:userId/password", async (req, res) => {
+// Change password - requires authentication
+router.put("/profile/:userId/password", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { currentPassword, newPassword } = req.body;
+
+    // Check if user is changing their own password
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only change your own password",
+      });
+    }
 
     const user = await User.findById(userId);
     if (!user) {
@@ -507,10 +579,17 @@ router.put("/profile/:userId/password", async (req, res) => {
   }
 });
 
-// Deactivate account
-router.put("/profile/:userId/deactivate", async (req, res) => {
+// Deactivate account - requires authentication
+router.put("/profile/:userId/deactivate", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Check if user is deactivating their own account
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only deactivate your own account",
+      });
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -535,10 +614,17 @@ router.put("/profile/:userId/deactivate", async (req, res) => {
   }
 });
 
-// Reactivate account
-router.put("/profile/:userId/reactivate", async (req, res) => {
+// Reactivate account - requires authentication
+router.put("/profile/:userId/reactivate", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Check if user is reactivating their own account
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only reactivate your own account",
+      });
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -563,10 +649,17 @@ router.put("/profile/:userId/reactivate", async (req, res) => {
   }
 });
 
-// Update last seen
-router.put("/profile/:userId/last-seen", async (req, res) => {
+// Update last seen - requires authentication
+router.put("/profile/:userId/last-seen", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Check if user is updating their own last seen
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only update your own last seen",
+      });
+    }
 
     const user = await User.findById(userId);
     if (!user) {

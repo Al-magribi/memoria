@@ -4,23 +4,17 @@ import "./profile.scss";
 import About from "./About";
 import Posts from "./Posts";
 import { FaCloudUploadAlt } from "react-icons/fa";
+import { useSelector } from "react-redux";
+
+const profilePlaceholder =
+  "https://t3.ftcdn.net/jpg/05/16/27/58/360_F_516275801_f3Fsp17x6HQK0xQgDQEELoTuERO4SsWV.jpg";
+
+const coverPhotoPlaceholder =
+  "https://avitek.vn/wp-content/uploads/2020/08/Image-Placeholder-Dark.png";
 
 const Profile = () => {
+  const { user } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("about");
-  const [user, setUser] = useState({
-    name: "John Doe",
-    coverPhoto:
-      "https://images.pexels.com/photos/709552/pexels-photo-709552.jpeg",
-    profilePicture:
-      "https://images.pexels.com/photos/818261/pexels-photo-818261.jpeg",
-    bio: "Software Developer | Coffee Lover | Travel Enthusiast",
-    location: "New York, USA",
-    work: "Senior Developer at Tech Corp",
-    education: "Computer Science at University of Technology",
-    friends: 1234,
-    photos: 567,
-    posts: 89,
-  });
 
   const coverPhotoInputRef = useRef(null);
   const profilePictureInputRef = useRef(null);
@@ -67,7 +61,7 @@ const Profile = () => {
         <div className="profile-content">
           {/* Cover Photo Section */}
           <div className="cover-photo">
-            <img src={user.coverPhoto} alt="Cover" />
+            <img src={user?.coverPhoto || coverPhotoPlaceholder} alt="Cover" />
             <div
               className="cover-photo-overlay"
               onClick={triggerCoverPhotoUpload}
@@ -86,7 +80,10 @@ const Profile = () => {
             />
 
             <div className="profile-picture">
-              <img src={user.profilePicture} alt={user.name} />
+              <img
+                src={user?.profilePicture || profilePlaceholder}
+                alt={user?.name}
+              />
               <div
                 className="profile-picture-overlay"
                 onClick={triggerProfilePictureUpload}
@@ -107,19 +104,16 @@ const Profile = () => {
 
           {/* Profile Info Section */}
           <div className="profile-info">
-            <h1>{user.name}</h1>
-            <p className="bio">{user.bio}</p>
+            <h1>{user?.name}</h1>
+            <p className="bio">{user?.bio}</p>
             <div className="stats">
               <div className="stat-item">
-                <span className="count">{user.friends}</span>
+                <span className="count">{user?.friends}</span>
                 <span className="label">Friends</span>
               </div>
+
               <div className="stat-item">
-                <span className="count">{user.photos}</span>
-                <span className="label">Photos</span>
-              </div>
-              <div className="stat-item">
-                <span className="count">{user.posts}</span>
+                <span className="count">{user?.posts}</span>
                 <span className="label">Posts</span>
               </div>
             </div>
