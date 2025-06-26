@@ -33,10 +33,10 @@ router.post(
       const { content, privacy, taggedUsers, location } = req.body;
       const userId = req.user._id;
       const images = req.files["images"]
-        ? req.files["images"].map((f) => f.filename)
+        ? req.files["images"].map((f) => `/assets/posts/${f.filename}`)
         : [];
       const videos = req.files["videos"]
-        ? req.files["videos"].map((f) => f.filename)
+        ? req.files["videos"].map((f) => `/assets/posts/${f.filename}`)
         : [];
       const post = new Post({
         author: userId,
@@ -65,6 +65,19 @@ router.get("/get-feed-posts", verify(), async (req, res) => {
     res.json(posts);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get my posts (paginated)
+router.get("/get-my-posts", verify(), async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const posts = await Post.getMyPosts(userId, page, limit);
+    res.json(posts);
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });

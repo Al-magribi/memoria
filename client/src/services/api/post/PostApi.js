@@ -23,6 +23,13 @@ export const PostApi = createApi({
       }),
       providesTags: ["Post"],
     }),
+    getMyPosts: builder.query({
+      query: () => ({
+        url: "/get-my-posts",
+        method: "GET",
+      }),
+      providesTags: ["Post"],
+    }),
     getPost: builder.query({
       query: (postId) => ({
         url: `/get-post/${postId}`,
@@ -95,6 +102,7 @@ export const PostApi = createApi({
 export const {
   useAddPostMutation,
   useGetFeedPostsQuery,
+  useGetMyPostsQuery,
   useGetPostQuery,
   useUpdatePostMutation,
   useDeletePostMutation,

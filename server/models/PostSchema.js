@@ -311,6 +311,30 @@ postSchema.statics.getFeedPosts = function (userId, page = 1, limit = 10) {
       }));
     });
 };
+postSchema.statics.getMyPosts = function (userId, page = 1, limit = 10) {
+  return this.find({
+    author: userId,
+    isDeleted: false,
+  })
+    .populate("author", "firstName lastName profilePicture")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean()
+    .then((posts) => {
+      return posts.map((post) => ({
+        ...post,
+        comments: post.comments.map((comment) => ({
+          ...comment,
+          isLiked: comment.likedBy.includes(userId),
+          replies: comment.replies.map((reply) => ({
+            ...reply,
+            isLiked: reply.likedBy.includes(userId),
+          })),
+        })),
+      }));
+    });
+};
 
 const Post = mongoose.model("Post", postSchema);
 export default Post;
