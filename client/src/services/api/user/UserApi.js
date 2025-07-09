@@ -24,6 +24,13 @@ export const UserApi = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+    logout: builder.mutation({
+      query: () => ({
+        url: "/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
     loadUser: builder.query({
       query: () => ({
         url: "/load-user",
@@ -81,16 +88,40 @@ export const UserApi = createApi({
       },
       invalidatesTags: ["User"],
     }),
+    getUserStats: builder.query({
+      query: (userId) => ({
+        url: `/profile/${userId}/stats`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    getUserPostCount: builder.query({
+      query: (userId) => ({
+        url: `/profile/${userId}/post-count`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    getToken: builder.query({
+      query: () => ({
+        url: "/token",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
 export const {
   useRegisterMutation,
   useLoginMutation,
+  useLogoutMutation,
   useLoadUserQuery,
   useUpdateProfileMutation,
   useUpdatePrivacyMutation,
   useUpdateNotificationsMutation,
   useUploadProfilePictureMutation,
   useUploadCoverPhotoMutation,
+  useGetUserStatsQuery,
+  useGetUserPostCountQuery,
+  useGetTokenQuery,
 } = UserApi;

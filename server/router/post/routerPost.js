@@ -4,6 +4,7 @@ import User from "../../models/UserSchema.js";
 import { verify } from "../../middleware/verify.js";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 const postStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -106,23 +107,128 @@ router.put(
   async (req, res) => {
     try {
       const { postId } = req.params;
-      const { content, privacy, taggedUsers, location } = req.body;
+      const {
+        content,
+        privacy,
+        taggedUsers,
+        location,
+        removeImages,
+        removeVideos,
+      } = req.body;
+
       const userId = req.user._id;
+
       const post = await Post.findById(postId);
+
       if (!post) return res.status(404).json({ message: "Post not found" });
+
       if (post.author.toString() !== userId.toString()) {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      if (content) post.content = content;
+
+      // Update text content
+      if (content !== undefined) post.content = content;
       if (privacy) post.privacy = privacy;
       if (taggedUsers) post.taggedUsers = JSON.parse(taggedUsers);
       if (location) post.location = JSON.parse(location);
-      if (req.files["images"])
-        post.images = req.files["images"].map((f) => f.filename);
-      if (req.files["videos"])
-        post.videos = req.files["videos"].map((f) => f.filename);
+
+      // Handle images update
+      if (req.files["images"]) {
+        // Delete old image files
+        if (post.images && post.images.length > 0) {
+          for (const oldImage of post.images) {
+            const oldFileName = oldImage.split("/").pop();
+            const oldImagePath = path.join(
+              "./server/assets/posts",
+              oldFileName
+            );
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+              console.log("Old image deleted:", oldFileName);
+            }
+          }
+        }
+
+        // Set new images
+        post.images = req.files["images"].map(
+          (f) => `/assets/posts/${f.filename}`
+        );
+      } else if (removeImages) {
+        // Handle removal of specific images
+        const imagesToRemove = JSON.parse(removeImages);
+        if (post.images && post.images.length > 0) {
+          // Delete files that are being removed
+          for (const imageIndex of imagesToRemove) {
+            if (post.images[imageIndex]) {
+              const oldFileName = post.images[imageIndex].split("/").pop();
+              const oldImagePath = path.join(
+                "./server/assets/posts",
+                oldFileName
+              );
+              if (fs.existsSync(oldImagePath)) {
+                fs.unlinkSync(oldImagePath);
+                console.log("Image deleted:", oldFileName);
+              }
+            }
+          }
+          // Remove images from array
+          post.images = post.images.filter(
+            (_, index) => !imagesToRemove.includes(index)
+          );
+        }
+      }
+
+      // Handle videos update
+      if (req.files["videos"]) {
+        // Delete old video files
+        if (post.videos && post.videos.length > 0) {
+          for (const oldVideo of post.videos) {
+            const oldFileName = oldVideo.split("/").pop();
+            const oldVideoPath = path.join(
+              "./server/assets/posts",
+              oldFileName
+            );
+            if (fs.existsSync(oldVideoPath)) {
+              fs.unlinkSync(oldVideoPath);
+              console.log("Old video deleted:", oldFileName);
+            }
+          }
+        }
+        // Set new videos
+        post.videos = req.files["videos"].map(
+          (f) => `/assets/posts/${f.filename}`
+        );
+      } else if (removeVideos) {
+        // Handle removal of specific videos
+        const videosToRemove = JSON.parse(removeVideos);
+        if (post.videos && post.videos.length > 0) {
+          // Delete files that are being removed
+          for (const videoIndex of videosToRemove) {
+            if (post.videos[videoIndex]) {
+              const oldFileName = post.videos[videoIndex].split("/").pop();
+              const oldVideoPath = path.join(
+                "./server/assets/posts",
+                oldFileName
+              );
+              if (fs.existsSync(oldVideoPath)) {
+                fs.unlinkSync(oldVideoPath);
+                console.log("Video deleted:", oldFileName);
+              }
+            }
+          }
+          // Remove videos from array
+          post.videos = post.videos.filter(
+            (_, index) => !videosToRemove.includes(index)
+          );
+        }
+      }
+
       post.isEdited = true;
       await post.save();
+
+      // Populate author info for response
+      await post.populate("author", "firstName lastName profilePicture");
+
       res.json({ message: "Post updated successfully", post });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -136,10 +242,37 @@ router.delete("/delete-post/:postId", verify(), async (req, res) => {
     const { postId } = req.params;
     const userId = req.user._id;
     const post = await Post.findById(postId);
+
     if (!post) return res.status(404).json({ message: "Post not found" });
+
     if (post.author.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Unauthorized" });
     }
+
+    // Delete associated image files
+    if (post.images && post.images.length > 0) {
+      for (const image of post.images) {
+        const imageFileName = image.split("/").pop();
+        const imagePath = path.join("./server/assets/posts", imageFileName);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log("Post image deleted:", imageFileName);
+        }
+      }
+    }
+
+    // Delete associated video files
+    if (post.videos && post.videos.length > 0) {
+      for (const video of post.videos) {
+        const videoFileName = video.split("/").pop();
+        const videoPath = path.join("./server/assets/posts", videoFileName);
+        if (fs.existsSync(videoPath)) {
+          fs.unlinkSync(videoPath);
+          console.log("Post video deleted:", videoFileName);
+        }
+      }
+    }
+
     post.isDeleted = true;
     await post.save();
     res.json({ message: "Post deleted successfully" });

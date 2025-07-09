@@ -1,34 +1,41 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Layout from "../../components/layout/Layout";
 import "./profile.scss";
 import About from "./About";
 import Posts from "./Posts";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import FriendButton from "../../components/friendbutton/FriendButton";
+import {
+  FaCloudUploadAlt,
+  FaUserFriends,
+  FaRegImages,
+  FaRegFileVideo,
+} from "react-icons/fa";
+import { MdPostAdd } from "react-icons/md";
 import { useSelector } from "react-redux";
 import {
   useUploadProfilePictureMutation,
   useUploadCoverPhotoMutation,
+  useGetUserStatsQuery,
+  useGetUserPostCountQuery,
 } from "../../services/api/user/UserApi";
 import Loading from "../../components/loading/Loading";
-
-const profilePlaceholder =
-  "https://t3.ftcdn.net/jpg/05/16/27/58/360_F_516275801_f3Fsp17x6HQK0xQgDQEELoTuERO4SsWV.jpg";
-
-const coverPhotoPlaceholder =
-  "https://avitek.vn/wp-content/uploads/2020/08/Image-Placeholder-Dark.png";
 
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
 
+  // Ambil statistik user dan jumlah post
+  const { data: statsData, isLoading: statsLoading } = useGetUserStatsQuery(
+    user?.id,
+    { skip: !user?.id }
+  );
+  const { data: postCountData, isLoading: postCountLoading } =
+    useGetUserPostCountQuery(user?.id, { skip: !user?.id });
+
   const [activeTab, setActiveTab] = useState("about");
-  const [
-    uploadProfilePicture,
-    { isLoading: isProfileLoading, isSuccess: isProfileSuccess },
-  ] = useUploadProfilePictureMutation();
-  const [
-    uploadCoverPhoto,
-    { isLoading: isCoverLoading, isSuccess: isCoverSuccess },
-  ] = useUploadCoverPhotoMutation();
+  const [uploadProfilePicture, { isLoading: isProfileLoading }] =
+    useUploadProfilePictureMutation();
+  const [uploadCoverPhoto, { isLoading: isCoverLoading }] =
+    useUploadCoverPhotoMutation();
 
   const coverPhotoInputRef = useRef(null);
   const profilePictureInputRef = useRef(null);
@@ -36,17 +43,14 @@ const Profile = () => {
   const handleImageUpload = async (type, file) => {
     if (file) {
       try {
-        const userId = user?._id;
+        const userId = user?.id;
         if (type === "profilePicture") {
           uploadProfilePicture({ userId, file });
-
-          // RTK Query will automatically invalidate and refetch user data
         } else if (type === "coverPhoto") {
           uploadCoverPhoto({ userId, file });
         }
       } catch (error) {
         console.error("Error uploading image:", error);
-        // You can add toast notification here for better UX
       }
     }
   };
@@ -73,22 +77,18 @@ const Profile = () => {
     profilePictureInputRef.current?.click();
   };
 
-  // useEffect(() => {
-  //   if (isProfileSuccess || isCoverSuccess) {
-  //     setTimeout(() => {
-  //       window.location.reload();
-  //     }, 1000);
-  //   }
-  // }, [isProfileSuccess, isCoverSuccess]);
-
   return (
     <Layout>
-      {(isProfileLoading || isCoverLoading) && <Loading />}
+      {(isProfileLoading || isCoverLoading) && (
+        <div className='profile-loading-overlay'>
+          <Loading />
+        </div>
+      )}
       <div className='profile flex-2'>
         <div className='profile-content'>
           {/* Cover Photo Section */}
           <div className='cover-photo'>
-            <img src={user?.coverPhoto || coverPhotoPlaceholder} alt='Cover' />
+            <img src={user?.coverPhoto} alt='Cover' loading='lazy' />
             <div
               className='cover-photo-overlay'
               onClick={triggerCoverPhotoUpload}
@@ -108,8 +108,9 @@ const Profile = () => {
 
             <div className='profile-picture'>
               <img
-                src={user?.profilePicture || profilePlaceholder}
-                alt={user?.name}
+                src={user?.profilePicture}
+                alt={user?.fullName || "Profile"}
+                loading='lazy'
               />
               <div
                 className='profile-picture-overlay'
@@ -131,19 +132,45 @@ const Profile = () => {
 
           {/* Profile Info Section */}
           <div className='profile-info'>
-            <h1>{user?.name}</h1>
-            <p className='bio'>{user?.bio}</p>
-            <div className='stats'>
-              <div className='stat-item'>
-                <span className='count'>{user?.friends}</span>
-                <span className='label'>Friends</span>
-              </div>
-
-              <div className='stat-item'>
-                <span className='count'>{user?.posts}</span>
-                <span className='label'>Posts</span>
+            <div className='profile-header'>
+              <div className='profile-name-section'>
+                <h1>{user?.fullName}</h1>
+                <div className='username'>@{user?.username}</div>
+                <p className='bio'>{user?.bio}</p>
               </div>
             </div>
+
+            {/* Statistik */}
+            {statsLoading || postCountLoading ? (
+              <div className='profile-stats loading'>Loading statistics...</div>
+            ) : (
+              <div className='profile-stats'>
+                <div className='stat-item' title='Posts'>
+                  <MdPostAdd className='stat-icon' />
+                  <span>
+                    {statsData?.stats?.postsCount ??
+                      postCountData?.postsCount ??
+                      0}
+                  </span>
+                  <span className='stat-label'>Posts</span>
+                </div>
+                <div className='stat-item' title='Photos'>
+                  <FaRegImages className='stat-icon' />
+                  <span>{statsData?.stats?.photosCount ?? 0}</span>
+                  <span className='stat-label'>Photos</span>
+                </div>
+                <div className='stat-item' title='Videos'>
+                  <FaRegFileVideo className='stat-icon' />
+                  <span>{statsData?.stats?.videosCount ?? 0}</span>
+                  <span className='stat-label'>Videos</span>
+                </div>
+                <div className='stat-item' title='Friends'>
+                  <FaUserFriends className='stat-icon' />
+                  <span>{statsData?.stats?.friendsCount ?? 0}</span>
+                  <span className='stat-label'>Friends</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Profile Navigation */}

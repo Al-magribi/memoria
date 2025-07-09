@@ -1,60 +1,90 @@
-import * as Io from "react-icons/io5";
+import { useGetFriendshipSuggestionsQuery } from "../../services/api/friendship/FriendshipApi";
+import FriendButton from "../friendbutton/FriendButton";
 
 const Suggestions = () => {
-  const suggestions = [
-    {
-      id: 1,
-      name: "John Doe",
-      profilePicture:
-        "https://images.pexels.com/photos/2744193/pexels-photo-2744193.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      mutualFriends: 100,
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      profilePicture:
-        "https://images.pexels.com/photos/2104252/pexels-photo-2104252.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      mutualFriends: 85,
-    },
-    {
-      id: 3,
-      name: "Jim Beam",
-      profilePicture:
-        "https://images.pexels.com/photos/906052/pexels-photo-906052.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      mutualFriends: 120,
-    },
-  ];
+  // Get friendship suggestions from API
+  const {
+    data: suggestionsData,
+    isLoading,
+    error,
+  } = useGetFriendshipSuggestionsQuery();
+
+  const suggestions = suggestionsData?.suggestions || [];
+
+  if (isLoading) {
+    return (
+      <div className='suggestions'>
+        <h3 className='suggestions-title'>People you might know</h3>
+        <div className='suggestions-list'>
+          <div className='loading-suggestions'>
+            <div className='loading-spinner'></div>
+            <p>Loading suggestions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='suggestions'>
+        <h3 className='suggestions-title'>People you might know</h3>
+        <div className='suggestions-list'>
+          <div className='error-suggestions'>
+            <p>Failed to load suggestions</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='suggestions'>
       <h3 className='suggestions-title'>People you might know</h3>
       <div className='suggestions-list'>
-        {suggestions?.map((suggestion) => (
-          <div className='suggestion-item' key={suggestion.id}>
-            <div className='suggestion-content'>
-              <div className='suggestion-avatar'>
-                <img
-                  src={suggestion.profilePicture}
-                  alt={`${suggestion.name}'s avatar`}
+        {suggestions.length > 0 ? (
+          suggestions.map((suggestion) => (
+            <div className='suggestion-item' key={suggestion.id}>
+              <div className='suggestion-content'>
+                <div className='suggestion-avatar'>
+                  <img
+                    src={suggestion.profilePicture}
+                    alt={`${suggestion.firstName} ${suggestion.lastName}'s avatar`}
+                    onClick={() =>
+                      (window.location.href = `/user/${suggestion.id}`)
+                    }
+                    style={{ cursor: "pointer" }}
+                    loading='lazy'
+                  />
+                </div>
+                <div className='suggestion-info'>
+                  <h4
+                    className='suggestion-name'
+                    onClick={() =>
+                      (window.location.href = `/user/${suggestion.id}`)
+                    }
+                    style={{ cursor: "pointer" }}
+                  >
+                    {suggestion.firstName} {suggestion.lastName}
+                  </h4>
+                  <p className='suggestion-mutual'>
+                    {suggestion.mutualFriendsCount} mutual friends
+                  </p>
+                </div>
+              </div>
+              <div className='suggestion-actions'>
+                <FriendButton
+                  userId={suggestion.id}
+                  className='suggestion-friend-btn'
                 />
               </div>
-              <div className='suggestion-info'>
-                <h4 className='suggestion-name'>{suggestion.name}</h4>
-                <p className='suggestion-mutual'>
-                  {suggestion.mutualFriends} mutual friends
-                </p>
-              </div>
             </div>
-            <div className='suggestion-actions'>
-              <button className='btn-add'>
-                <Io.IoPersonAdd />
-              </button>
-              <button className='btn-remove'>
-                <Io.IoPersonRemove />
-              </button>
-            </div>
+          ))
+        ) : (
+          <div className='no-suggestions'>
+            <p>No suggestions available</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

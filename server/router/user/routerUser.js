@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import mongoose from "mongoose";
 
 const profileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -163,10 +164,11 @@ router.post("/signin", async (req, res) => {
 // Get user profile
 router.get("/load-user", verify(), async (req, res) => {
   try {
-    const { id } = req.user;
+    const { _id } = req.user;
 
-    const user = await User.findById(id);
+    const user = await User.getUserWithPostCount(_id);
     if (!user) {
+      console.log("User not found for ID:", _id);
       return res.status(404).json({
         message: "User not found",
       });
@@ -174,7 +176,48 @@ router.get("/load-user", verify(), async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.log(error);
+    console.log("Error loading user:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get other user's profile
+router.get("/profile/:userId", verify(), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id;
+
+    // Don't allow users to view their own profile through this endpoint
+    if (currentUserId.toString() === userId) {
+      return res.status(400).json({
+        message: "Use /load-user for your own profile",
+      });
+    }
+
+    const user = await User.getPublicProfile(userId, currentUserId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Check if user is active and profile is visible
+    if (!user.isActive) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Check privacy settings
+    if (user.privacy?.profileVisibility === "private") {
+      return res.status(403).json({
+        message: "This profile is private",
+      });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.log("Error loading user profile:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -347,7 +390,6 @@ router.post(
   async (req, res) => {
     try {
       const { userId } = req.query;
-      console.log("Upload request received for user:", userId);
 
       if (!userId) {
         return res.status(400).json({
@@ -374,9 +416,9 @@ router.post(
         const oldFileName = currentUser.profilePicture.split("/").pop();
         const oldFilePath = path.join("./server/assets/profiles", oldFileName);
 
-        if (fs.existsSync(oldFilePath)) {
+        // Do not delete if the file is 'user.jpg' or 'cover.jpg'
+        if (fs.existsSync(oldFilePath) && oldFileName !== "user.jpg") {
           fs.unlinkSync(oldFilePath);
-          console.log("Old profile picture deleted:", oldFileName);
         }
       }
 
@@ -441,9 +483,9 @@ router.post(
         const oldFileName = currentUser.coverPhoto.split("/").pop();
         const oldFilePath = path.join("./server/assets/profiles", oldFileName);
 
-        if (fs.existsSync(oldFilePath)) {
+        // Do not delete if the file is 'user.jpg' or 'cover.jpg'
+        if (fs.existsSync(oldFilePath) && oldFileName !== "cover.jpg") {
           fs.unlinkSync(oldFilePath);
-          console.log("Old cover photo deleted:", oldFileName);
         }
       }
 
@@ -467,89 +509,6 @@ router.post(
     }
   }
 );
-
-// ========================================
-// NOTIFICATION SETTINGS ROUTES
-// ========================================
-
-// Get notification settings - requires authentication
-router.get("/profile/:userId/notifications", verify(), async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Check if user is accessing their own notification settings
-    if (req.user._id.toString() !== userId) {
-      return res.status(403).json({
-        message: "You can only access your own notification settings",
-      });
-    }
-
-    const user = await User.findById(userId).select("notifications");
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    res.json({
-      message: "Notification settings retrieved successfully",
-      notifications: user.notifications,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error retrieving notification settings",
-      error: error.message,
-    });
-  }
-});
-
-// Update notification settings - requires authentication
-router.put("/profile/:userId/notifications", verify(), async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { email, push, sms, friendRequests, messages, likes, comments } =
-      req.body;
-
-    // Check if user is updating their own notification settings
-    if (req.user._id.toString() !== userId) {
-      return res.status(403).json({
-        message: "You can only update your own notification settings",
-      });
-    }
-
-    const updateFields = {};
-    if (email !== undefined) updateFields["notifications.email"] = email;
-    if (push !== undefined) updateFields["notifications.push"] = push;
-    if (sms !== undefined) updateFields["notifications.sms"] = sms;
-    if (friendRequests !== undefined)
-      updateFields["notifications.friendRequests"] = friendRequests;
-    if (messages !== undefined)
-      updateFields["notifications.messages"] = messages;
-    if (likes !== undefined) updateFields["notifications.likes"] = likes;
-    if (comments !== undefined)
-      updateFields["notifications.comments"] = comments;
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
-      new: true,
-    });
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    res.json({
-      message: "Notification settings updated successfully",
-      notifications: updatedUser.notifications,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error updating notification settings",
-      error: error.message,
-    });
-  }
-});
 
 // ========================================
 // USER SEARCH AND DISCOVERY ROUTES
@@ -594,18 +553,25 @@ router.get("/profile/:userId/stats", verify(), async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findById(userId).select(
-      "stats username firstName lastName"
-    );
+    // Check if user is requesting their own stats or if profile is public
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         message: "User not found",
       });
     }
 
+    // Get real-time statistics
+    const realTimeStats = await User.calculateUserStats(userId);
+
+    const stats = {
+      ...user.stats,
+      ...realTimeStats,
+    };
+
     res.json({
       message: "User statistics retrieved successfully",
-      stats: user.stats,
+      stats: stats,
       user: {
         id: user._id,
         username: user.username,
@@ -615,6 +581,42 @@ router.get("/profile/:userId/stats", verify(), async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error retrieving user statistics",
+      error: error.message,
+    });
+  }
+});
+
+// Get user post count - requires authentication
+router.get("/profile/:userId/post-count", verify(), async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Get real-time post count
+    const Post = mongoose.model("Post");
+    const postsCount = await Post.countDocuments({
+      author: userId,
+      isDeleted: false,
+    });
+
+    res.json({
+      message: "Post count retrieved successfully",
+      postsCount: postsCount,
+      user: {
+        id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving post count",
       error: error.message,
     });
   }
@@ -801,6 +803,29 @@ router.put("/profile/:userId/last-seen", verify(), async (req, res) => {
       message: "Error updating last seen",
       error: error.message,
     });
+  }
+});
+
+// ========================================
+// LOGOUT ROUTE
+// ========================================
+
+router.post("/logout", verify(), async (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Logged out successfully" });
+});
+
+// Endpoint untuk mengambil token dari cookie (untuk frontend/socket.io)
+router.get("/token", (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: "No token found" });
+    }
+
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

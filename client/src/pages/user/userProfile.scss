@@ -1,0 +1,222 @@
+.user-profile {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .loading-container,
+  .error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    text-align: center;
+
+    h2 {
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+  }
+
+  .profile-content {
+    background: var(--bg-color);
+    border-radius: 10px;
+    box-shadow: 0 2px 12px 0 var(--shadow-color);
+    margin-bottom: 20px;
+
+    .cover-photo {
+      position: relative;
+      height: 400px;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-top-right-radius: 10px;
+        border-top-left-radius: 10px;
+      }
+
+      .profile-picture {
+        position: absolute;
+        bottom: -50px;
+        left: 50px;
+        width: 168px;
+        height: 168px;
+        border-radius: 50%;
+        border: 4px solid var(--bg-color);
+        overflow: hidden;
+        box-shadow: 0 2px 12px 0 var(--shadow-color);
+        z-index: 2;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+
+    .profile-info {
+      padding: 60px 50px 20px;
+      border-bottom: 1px solid var(--border-color);
+
+      .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+
+        .profile-name-section {
+          flex: 1;
+
+          h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-color);
+          }
+
+          .username {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 10px;
+          }
+
+          .bio {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+          }
+        }
+
+        .profile-actions {
+          .profile-friend-btn {
+            min-width: 140px;
+            padding: 10px 20px;
+            font-size: 1rem;
+          }
+        }
+      }
+
+      .profile-stats {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+
+          .stat-icon {
+            font-size: 1.5rem;
+            color: var(--menu-item-color-hover);
+          }
+
+          span {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+
+            &.stat-label {
+              font-size: 14px;
+              color: var(--text-secondary);
+              font-weight: 400;
+            }
+          }
+        }
+      }
+    }
+
+    .profile-nav {
+      display: flex;
+      padding: 0 50px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-color);
+
+      .nav-item {
+        padding: 15px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--menu-item-color);
+        border: none;
+        background: none;
+        cursor: pointer;
+        position: relative;
+
+        &:hover {
+          color: var(--menu-item-color-hover);
+        }
+
+        &.active {
+          color: var(--menu-item-color-hover);
+
+          &::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--menu-item-color-hover);
+          }
+        }
+      }
+    }
+
+    .profile-main {
+      padding: 30px 50px;
+
+      .about-section {
+        h3 {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 20px;
+          color: var(--text-color);
+        }
+
+        .about-content {
+          .about-item {
+            margin-bottom: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            strong {
+              color: var(--text-color);
+              font-weight: 600;
+              margin-right: 8px;
+            }
+
+            a {
+              color: var(--menu-item-color-hover);
+              text-decoration: none;
+
+              &:hover {
+                text-decoration: underline;
+              }
+            }
+          }
+        }
+      }
+
+      .posts-section {
+        text-align: center;
+        padding: 40px 0;
+        color: var(--text-secondary);
+      }
+    }
+  }
+}

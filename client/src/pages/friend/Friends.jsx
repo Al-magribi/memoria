@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/layout/Layout";
-import { FaUserFriends, FaCheck, FaTimes } from "react-icons/fa";
+import { FaUserFriends, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
+import UserSearch from "../../components/search/UserSearch";
+import {
+  useGetFriendRequestsQuery,
+  useGetFriendsQuery,
+  useAcceptFriendRequestMutation,
+  useRejectFriendRequestMutation,
+} from "../../services/api/friendship/FriendshipApi";
 import "./friends.scss";
-
-const dummyMutualAvatars = [
-  "https://randomuser.me/api/portraits/women/1.jpg",
-  "https://randomuser.me/api/portraits/men/2.jpg",
-  "https://randomuser.me/api/portraits/women/3.jpg",
-];
+import Loading from "../../components/loading/Loading";
 
 const Friends = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [loadingStates, setLoadingStates] = useState({});
+  const [activeTab, setActiveTab] = useState("friends");
+
+  // API hooks
+  const { data: friendRequestsData, isLoading: isLoadingRequests } =
+    useGetFriendRequestsQuery();
+  const { data: friendsData, isLoading: isLoadingFriends } =
+    useGetFriendsQuery();
+  const [acceptFriendRequest] = useAcceptFriendRequestMutation();
+  const [rejectFriendRequest] = useRejectFriendRequestMutation();
 
   // Detect mobile device
   useEffect(() => {
@@ -25,195 +36,213 @@ const Friends = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const dummyFriends = [
-    {
-      id: 1,
-      name: "Savta Komalaria",
-      mutual: 5,
-      profilePicture: "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-    {
-      id: 2,
-      name: "Muhammad Zain Maulana",
-      mutual: 67,
-      profilePicture: "https://randomuser.me/api/portraits/men/45.jpg",
-    },
-    {
-      id: 3,
-      name: "Mohamad Farhan",
-      mutual: 2,
-      profilePicture: "https://randomuser.me/api/portraits/men/46.jpg",
-    },
-    {
-      id: 4,
-      name: "Khairul Umam",
-      mutual: 0,
-      profilePicture: "https://randomuser.me/api/portraits/men/47.jpg",
-    },
-    {
-      id: 5,
-      name: "Nur Azizah",
-      mutual: 7,
-      profilePicture: "https://randomuser.me/api/portraits/women/48.jpg",
-    },
-    {
-      id: 6,
-      name: "Rahmat Akbar",
-      mutual: 25,
-      profilePicture: "https://randomuser.me/api/portraits/men/49.jpg",
-    },
-  ];
-
   // Handle friend request confirmation
-  const handleConfirm = async (friendId) => {
-    setLoadingStates((prev) => ({ ...prev, [friendId]: true }));
+  const handleConfirm = async (friendshipId) => {
+    setLoadingStates((prev) => ({ ...prev, [friendshipId]: true }));
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log(`Confirmed friend request for ID: ${friendId}`);
-      setLoadingStates((prev) => ({ ...prev, [friendId]: false }));
-      // TODO: Update UI to move friend from requests to friends list
-    }, 1000);
+    try {
+      await acceptFriendRequest(friendshipId);
+      console.log(`Confirmed friend request for ID: ${friendshipId}`);
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [friendshipId]: false }));
+    }
   };
 
-  // Handle friend request deletion
-  const handleDelete = async (friendId) => {
-    setLoadingStates((prev) => ({ ...prev, [friendId]: true }));
+  // Handle friend request rejection
+  const handleReject = async (friendshipId) => {
+    setLoadingStates((prev) => ({ ...prev, [friendshipId]: true }));
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log(`Deleted friend request for ID: ${friendId}`);
-      setLoadingStates((prev) => ({ ...prev, [friendId]: false }));
-      // TODO: Remove friend from requests list
-    }, 1000);
+    try {
+      await rejectFriendRequest(friendshipId);
+      console.log(`Rejected friend request for ID: ${friendshipId}`);
+    } catch (error) {
+      console.error("Error rejecting friend request:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [friendshipId]: false }));
+    }
   };
 
   // Handle friend item click (for mobile navigation)
   const handleFriendClick = (friendId) => {
     if (isMobile) {
-      // TODO: Navigate to friend profile or open friend details modal
-      console.log(`Navigated to friend profile: ${friendId}`);
+      // Navigate to friend profile
+      window.location.href = `/user/${friendId}`;
     }
   };
 
+  if (isLoadingRequests || isLoadingFriends) {
+    return <Loading />;
+  }
+
+  const friendRequests = friendRequestsData?.requests || [];
+  const friends = friendsData?.friends || [];
+
   return (
     <Layout>
-      <div className="friends">
-        <h2 className="friends-title">
-          {isMobile ? "Friend Requests" : "Friends Requests"}
-        </h2>
-        <div className="friends-list">
-          {dummyFriends.map((friend, idx) => (
-            <div
-              key={friend.id}
-              className="friend-item"
-              onClick={() => handleFriendClick(friend.id)}
-              style={{ cursor: isMobile ? "pointer" : "default" }}
-            >
-              <img
-                className="friend-avatar"
-                src={friend.profilePicture}
-                alt={friend.name}
-                loading="lazy"
-              />
-              <div className="friend-info">
-                <div className="friend-name">{friend.name}</div>
-                <div className="friend-mutual">
-                  <span className="mutual-icon">
-                    <FaUserFriends />
-                  </span>
-                  {friend.mutual} mutual friends
-                  <span className="mutual-avatars">
-                    {dummyMutualAvatars
-                      .slice(0, Math.min(friend.mutual, 3))
-                      .map((av, i) => (
-                        <img src={av} alt="mutual" key={i} />
-                      ))}
-                  </span>
-                </div>
-
-                <div className="friend-actions">
-                  <button
-                    className="btn-confirm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleConfirm(friend.id);
-                    }}
-                    disabled={loadingStates[friend.id]}
-                    aria-label={`Confirm ${friend.name}'s friend request`}
-                  >
-                    {loadingStates[friend.id] ? (
-                      <span>Confirming...</span>
-                    ) : (
-                      <>
-                        {isMobile && <FaCheck style={{ marginRight: "4px" }} />}
-                        Confirm
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className="btn-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(friend.id);
-                    }}
-                    disabled={loadingStates[friend.id]}
-                    aria-label={`Delete ${friend.name}'s friend request`}
-                  >
-                    {loadingStates[friend.id] ? (
-                      <span>Deleting...</span>
-                    ) : (
-                      <>
-                        {isMobile && <FaTimes style={{ marginRight: "4px" }} />}
-                        Delete
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+      <div className='friends'>
+        {/* Navigation Tabs */}
+        <div className='friends-nav'>
+          <button
+            className={`nav-tab ${activeTab === "friends" ? "active" : ""}`}
+            onClick={() => setActiveTab("friends")}
+          >
+            <FaUserFriends />
+            Friends
+          </button>
+          <button
+            className={`nav-tab ${activeTab === "search" ? "active" : ""}`}
+            onClick={() => setActiveTab("search")}
+          >
+            <FaSearch />
+            Find People
+          </button>
         </div>
 
-        <h2 className="friends-title">Friends</h2>
-        <div className="friends-list">
-          {dummyFriends?.map((friend) => (
-            <div
-              key={friend.id}
-              className="friend-item"
-              onClick={() => handleFriendClick(friend.id)}
-              style={{ cursor: "pointer" }}
-            >
-              <img
-                className="friend-avatar"
-                src={friend.profilePicture}
-                alt={friend.name}
-                loading="lazy" // Better performance on mobile
-              />
-              <div className="friend-info">
-                <div className="friend-name">{friend.name}</div>
-                <div className="friend-mutual">
-                  <span className="mutual-icon">
-                    <FaUserFriends />
-                  </span>
-                  {friend.mutual} mutual friends
+        {/* Content based on active tab */}
+        {activeTab === "friends" && (
+          <>
+            {friendRequests.length > 0 && (
+              <>
+                <h2 className='friends-title'>
+                  {isMobile ? "Friend Requests" : "Friends Requests"}
+                </h2>
+                <div className='friends-list'>
+                  {friendRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className='friend-item'
+                      onClick={() => handleFriendClick(request.requester.id)}
+                      style={{ cursor: isMobile ? "pointer" : "default" }}
+                    >
+                      <img
+                        className='friend-avatar'
+                        src={request.requester.profilePicture}
+                        alt={`${request.requester.firstName} ${request.requester.lastName}`}
+                        loading='lazy'
+                      />
+                      <div className='friend-info'>
+                        <div className='friend-name'>
+                          {request.requester.firstName}{" "}
+                          {request.requester.lastName}
+                        </div>
+                        <div className='friend-mutual'>
+                          <span className='mutual-icon'>
+                            <FaUserFriends />
+                          </span>
+                          {request.mutualFriendsCount} mutual friends
+                        </div>
+
+                        <div className='friend-actions'>
+                          <button
+                            className='btn-confirm'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConfirm(request.id);
+                            }}
+                            disabled={loadingStates[request.id]}
+                            aria-label={`Confirm ${request.requester.firstName}'s friend request`}
+                          >
+                            {loadingStates[request.id] ? (
+                              <span>Confirming...</span>
+                            ) : (
+                              <>
+                                {isMobile && (
+                                  <FaCheck style={{ marginRight: "4px" }} />
+                                )}
+                                Confirm
+                              </>
+                            )}
+                          </button>
+                          <button
+                            className='btn-delete'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(request.id);
+                            }}
+                            disabled={loadingStates[request.id]}
+                            aria-label={`Reject ${request.requester.firstName}'s friend request`}
+                          >
+                            {loadingStates[request.id] ? (
+                              <span>Rejecting...</span>
+                            ) : (
+                              <>
+                                {isMobile && (
+                                  <FaTimes style={{ marginRight: "4px" }} />
+                                )}
+                                Reject
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {isMobile && (
+              </>
+            )}
+
+            <h2 className='friends-title'>Friends</h2>
+            <div className='friends-list'>
+              {friends.length > 0 ? (
+                friends.map((friend) => (
                   <div
-                    style={{
-                      fontSize: "0.8rem",
-                      color: "#65676b",
-                      marginTop: "0.5rem",
-                      fontStyle: "italic",
-                    }}
+                    key={friend.id}
+                    className='friend-item'
+                    onClick={() => handleFriendClick(friend.id)}
+                    style={{ cursor: "pointer" }}
                   >
-                    Tap to view profile
+                    <img
+                      className='friend-avatar'
+                      src={
+                        friend.profilePicture ||
+                        "https://via.placeholder.com/50"
+                      }
+                      alt={`${friend.firstName} ${friend.lastName}`}
+                      loading='lazy'
+                    />
+                    <div className='friend-info'>
+                      <div className='friend-name'>
+                        {friend.firstName} {friend.lastName}
+                      </div>
+                      <div className='friend-mutual'>
+                        <span className='mutual-icon'>
+                          <FaUserFriends />
+                        </span>
+                        {friend.mutualFriendsCount} mutual friends
+                      </div>
+                      {isMobile && (
+                        <div
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "#65676b",
+                            marginTop: "0.5rem",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          Tap to view profile
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    color: "#65676b",
+                  }}
+                >
+                  No friends yet. Start connecting with people!
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          </>
+        )}
+
+        {activeTab === "search" && <UserSearch />}
       </div>
     </Layout>
   );

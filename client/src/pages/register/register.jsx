@@ -6,10 +6,13 @@ import { useRegisterMutation } from "../../services/api/user/UserApi";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../services/api/user/UserSlice";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 
 const Register = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { user, isSignin } = useSelector((state) => state.user);
 
   const [isMobile, setIsMobile] = useState(false);
   const [errors, setErrors] = useState({});
@@ -158,134 +161,140 @@ const Register = () => {
     }
   }, [isSuccess, registerData, dispatch, navigate]);
 
+  useEffect(() => {
+    if (isSignin && user?.id) {
+      navigate("/");
+    }
+  }, [isSignin, user, navigate]);
+
   return (
-    <div className="register d-flex-center">
-      <div className="wrapper">
+    <div className='register d-flex-center'>
+      <div className='wrapper'>
         <h1>{isMobile ? "Welcome to Memoria" : "Create Account"}</h1>
         <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
+          <div className='form-row'>
+            <div className='form-group'>
               <input
-                type="text"
-                placeholder="First Name *"
-                name="firstName"
+                type='text'
+                placeholder='First Name *'
+                name='firstName'
                 value={data.firstName}
                 onChange={handleChange}
                 className={errors.firstName ? "error" : ""}
                 disabled={isLoading}
               />
               {errors.firstName && (
-                <span className="error-text">{errors.firstName}</span>
+                <span className='error-text'>{errors.firstName}</span>
               )}
             </div>
-            <div className="form-group">
+            <div className='form-group'>
               <input
-                type="text"
-                placeholder="Last Name *"
-                name="lastName"
+                type='text'
+                placeholder='Last Name *'
+                name='lastName'
                 value={data.lastName}
                 onChange={handleChange}
                 className={errors.lastName ? "error" : ""}
                 disabled={isLoading}
               />
               {errors.lastName && (
-                <span className="error-text">{errors.lastName}</span>
+                <span className='error-text'>{errors.lastName}</span>
               )}
             </div>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="text"
-              placeholder="Username *"
-              name="username"
+              type='text'
+              placeholder='Username *'
+              name='username'
               value={data.username}
               onChange={handleChange}
               className={errors.username ? "error" : ""}
               disabled={isLoading}
             />
             {errors.username && (
-              <span className="error-text">{errors.username}</span>
+              <span className='error-text'>{errors.username}</span>
             )}
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="email"
-              placeholder="Email *"
-              name="email"
+              type='email'
+              placeholder='Email *'
+              name='email'
               value={data.email}
               onChange={handleChange}
               className={errors.email ? "error" : ""}
               disabled={isLoading}
             />
-            {errors.email && <span className="error-text">{errors.email}</span>}
+            {errors.email && <span className='error-text'>{errors.email}</span>}
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+          <div className='form-row'>
+            <div className='form-group'>
               <input
-                type="date"
-                placeholder="Date of Birth"
-                name="dateOfBirth"
+                type='date'
+                placeholder='Date of Birth'
+                name='dateOfBirth'
                 value={data.dateOfBirth}
                 onChange={handleChange}
                 disabled={isLoading}
               />
             </div>
-            <div className="form-group">
-              <div className="select-wrapper">
+            <div className='form-group'>
+              <div className='select-wrapper'>
                 <select
-                  name="gender"
+                  name='gender'
                   value={data.gender}
                   onChange={handleChange}
                   disabled={isLoading}
                 >
-                  <option value="Prefer not to say">Prefer not to say</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value='Prefer not to say'>Prefer not to say</option>
+                  <option value='Male'>Male</option>
+                  <option value='Female'>Female</option>
+                  <option value='Other'>Other</option>
                 </select>
-                <MdExpandMore className="select-icon" />
+                <MdExpandMore className='select-icon' />
               </div>
             </div>
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="password"
-              placeholder="Password *"
-              name="password"
+              type='password'
+              placeholder='Password *'
+              name='password'
               value={data.password}
               onChange={handleChange}
               className={errors.password ? "error" : ""}
               disabled={isLoading}
             />
             {errors.password && (
-              <span className="error-text">{errors.password}</span>
+              <span className='error-text'>{errors.password}</span>
             )}
           </div>
 
-          <div className="form-group">
+          <div className='form-group'>
             <input
-              type="password"
-              placeholder="Confirm Password *"
-              name="confirmPassword"
+              type='password'
+              placeholder='Confirm Password *'
+              name='confirmPassword'
               value={data.confirmPassword}
               onChange={handleChange}
               className={errors.confirmPassword ? "error" : ""}
               disabled={isLoading}
             />
             {errors.confirmPassword && (
-              <span className="error-text">{errors.confirmPassword}</span>
+              <span className='error-text'>{errors.confirmPassword}</span>
             )}
           </div>
 
-          <button type="submit" className="btn-primary" disabled={isLoading}>
+          <button type='submit' className='btn-primary' disabled={isLoading}>
             {isLoading ? "Creating Account..." : "Create Account"}
           </button>
 
-          <p className="signin-link">
+          <p className='signin-link'>
             Already have an account?{" "}
             <span onClick={() => navigate("/signin")}>Sign in</span>
           </p>

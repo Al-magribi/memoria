@@ -3,8 +3,9 @@ import { GrSend } from "react-icons/gr";
 import "./PostAdd.scss";
 import { useAddPostMutation } from "../../../services/api/post/PostApi";
 import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_MEDIA = 10;
 
 const PostAdd = () => {
@@ -14,7 +15,7 @@ const PostAdd = () => {
   const [text, setText] = useState("");
   const [media, setMedia] = useState([]); // array of { file, url, type }
   const [isMobile, setIsMobile] = useState(false);
-  const [addPost, { isLoading, error, isSuccess }] = useAddPostMutation();
+  const [addPost, { isLoading, error, isSuccess, data }] = useAddPostMutation();
 
   // Detect mobile device
   useEffect(() => {
@@ -51,7 +52,7 @@ const PostAdd = () => {
     let totalMedia = media.length;
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        alert(`File '${file.name}' size must be less than 10MB`);
+        alert(`File '${file.name}' size must be less than 50MB`);
         continue;
       }
       if (totalMedia + newMedia.length >= MAX_MEDIA) {
@@ -103,25 +104,30 @@ const PostAdd = () => {
     formData.append("taggedUsers", JSON.stringify([]));
     formData.append("location", JSON.stringify({}));
 
-    try {
-      await addPost(formData).unwrap();
-      // Reset form
+    addPost(formData);
+  };
+
+  useEffect(() => {
+    if (isSuccess) {
       setText("");
       setMedia([]);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
-    } catch (e) {
-      console.log(e);
-      // Error handled below
+
+      toast.success(data.message);
     }
-  };
+
+    if (error) {
+      toast.error(error.data.message);
+    }
+  }, [isSuccess, error, data]);
 
   return (
     <div className='post-add'>
       <div className='post-add-header d-flex'>
         <div className='image'>
-          <img src={user.profilePicture} alt='user' />
+          <img src={user.profilePicture} alt='user' loading='lazy' />
         </div>
         <textarea
           ref={textareaRef}
@@ -204,14 +210,6 @@ const PostAdd = () => {
           {isLoading ? "Sharing..." : <GrSend />}
         </button>
       </div>
-      {error && (
-        <div className='error-message'>
-          {error.data?.message || "Failed to share post."}
-        </div>
-      )}
-      {isSuccess && (
-        <div className='success-message'>Post shared successfully!</div>
-      )}
     </div>
   );
 };

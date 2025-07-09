@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     // Basic Information
     username: {
@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
     // Profile Information
     profilePicture: {
       type: String,
-      default: null,
+      default: "/assets/profiles/user.jpg",
     },
     coverPhoto: {
       type: String,
@@ -189,15 +189,15 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-userSchema.index({ firstName: 1, lastName: 1 });
-userSchema.index({ "privacy.profileVisibility": 1, isActive: 1 });
+UserSchema.index({ firstName: 1, lastName: 1 });
+UserSchema.index({ "privacy.profileVisibility": 1, isActive: 1 });
 
 // Virtual Fields
-userSchema.virtual("fullName").get(function () {
+UserSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.virtual("age").get(function () {
+UserSchema.virtual("age").get(function () {
   if (!this.dateOfBirth) return null;
   const today = new Date();
   const birthDate = new Date(this.dateOfBirth);
@@ -215,18 +215,18 @@ userSchema.virtual("age").get(function () {
 });
 
 // Custom validation
-userSchema.path("email").validate(function (value) {
+UserSchema.path("email").validate(function (value) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(value);
 }, "Email format is invalid");
 
-userSchema.path("username").validate(function (value) {
+UserSchema.path("username").validate(function (value) {
   const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
   return usernameRegex.test(value);
 }, "Username must be 3-30 characters and contain only letters, numbers, and underscores");
 
 // Middleware - Hash password before save
-userSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   try {
@@ -239,16 +239,16 @@ userSchema.pre("save", async function (next) {
 });
 
 // Instance Methods
-userSchema.methods.comparePassword = async function (candidatePassword) {
+UserSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.methods.updateLastSeen = function () {
+UserSchema.methods.updateLastSeen = function () {
   this.lastSeen = new Date();
   return this.save();
 };
 
-userSchema.methods.incrementStats = function (field, increment = 1) {
+UserSchema.methods.incrementStats = function (field, increment = 1) {
   if (this.stats[field] !== undefined) {
     this.stats[field] += increment;
     return this.save();
@@ -256,7 +256,7 @@ userSchema.methods.incrementStats = function (field, increment = 1) {
   throw new Error(`Invalid stats field: ${field}`);
 };
 
-userSchema.methods.decrementStats = function (field, decrement = 1) {
+UserSchema.methods.decrementStats = function (field, decrement = 1) {
   if (this.stats[field] !== undefined) {
     this.stats[field] = Math.max(0, this.stats[field] - decrement);
     return this.save();
@@ -265,13 +265,78 @@ userSchema.methods.decrementStats = function (field, decrement = 1) {
 };
 
 // Static Methods
-userSchema.statics.findByUsernameOrEmail = function (identifier) {
+UserSchema.statics.findByUsernameOrEmail = function (identifier) {
   return this.findOne({
     $or: [{ username: identifier }, { email: identifier.toLowerCase() }],
   });
 };
 
-userSchema.statics.searchUsers = function (query, options = {}) {
+UserSchema.statics.getUserWithPostCount = async function (userId) {
+  const user = await this.findById(userId);
+  if (!user) return null;
+
+  // Count posts for this user
+  const Post = mongoose.model("Post");
+  const postsCount = await Post.countDocuments({
+    author: userId,
+    isDeleted: false,
+  });
+
+  // Return user with real-time post count without saving
+  const userObj = user.toObject();
+  userObj.stats.postsCount = postsCount;
+  userObj.postsCount = postsCount;
+
+  // Add id field for consistency with login/register responses
+  userObj.id = userObj._id;
+
+  return userObj;
+};
+
+UserSchema.statics.getFriendsCount = async function (userId) {
+  const Friendship = mongoose.model("Friendship");
+  const friendships = await Friendship.getFriends(userId);
+  return friendships.length;
+};
+
+UserSchema.statics.calculateUserStats = async function (userId) {
+  const Post = mongoose.model("Post");
+  const Friendship = mongoose.model("Friendship");
+
+  // Count posts
+  const postsCount = await Post.countDocuments({
+    author: userId,
+    isDeleted: false,
+  });
+
+  // Count photos (posts with images)
+  const photosCount = await Post.countDocuments({
+    author: userId,
+    isDeleted: false,
+    images: { $exists: true, $ne: [] },
+  });
+
+  // Count videos (posts with videos)
+  const videosCount = await Post.countDocuments({
+    author: userId,
+    isDeleted: false,
+    videos: { $exists: true, $ne: [] },
+  });
+
+  // Count friends (real-time)
+  const friendsCount = await Friendship.getFriends(userId).then(
+    (f) => f.length
+  );
+
+  return {
+    postsCount,
+    photosCount,
+    videosCount,
+    friendsCount,
+  };
+};
+
+UserSchema.statics.searchUsers = function (query, options = {}) {
   const { limit = 10, skip = 0, privacy = "public" } = options;
 
   const searchQuery = {
@@ -295,7 +360,7 @@ userSchema.statics.searchUsers = function (query, options = {}) {
     .sort({ "stats.friendsCount": -1, username: 1 });
 };
 
-userSchema.statics.getPublicProfile = function (
+UserSchema.statics.getPublicProfile = function (
   userId,
   requestingUserId = null
 ) {
@@ -331,7 +396,7 @@ userSchema.statics.getPublicProfile = function (
 };
 
 // Configure toJSON to include virtuals and exclude sensitive data
-userSchema.set("toJSON", {
+UserSchema.set("toJSON", {
   virtuals: true,
   transform: function (doc, ret) {
     delete ret.password;
@@ -341,7 +406,7 @@ userSchema.set("toJSON", {
 });
 
 // Configure toObject to include virtuals and exclude sensitive data
-userSchema.set("toObject", {
+UserSchema.set("toObject", {
   virtuals: true,
   transform: function (doc, ret) {
     delete ret.password;
@@ -350,6 +415,6 @@ userSchema.set("toObject", {
   },
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", UserSchema);
 
 export default User;

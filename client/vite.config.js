@@ -13,8 +13,16 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        "/api": apiUrl,
-        "/assets": apiUrl,
+        "/api": {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: false,
+        },
+        "/assets": {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
     build: {

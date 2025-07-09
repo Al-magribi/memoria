@@ -106,4 +106,10 @@ export const {
   useGetPostQuery,
   useUpdatePostMutation,
   useDeletePostMutation,
+  useAddCommentMutation,
+  useAddReplyMutation,
+  useLikeCommentMutation,
+  useLikeReplyMutation,
+  useDeleteCommentMutation,
+  useDeleteReplyMutation,
 } = PostApi;

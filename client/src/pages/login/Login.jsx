@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./login.scss";
 import { useLoginMutation } from "../../services/api/user/UserApi";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "../../services/api/user/UserSlice";
 import { toast } from "react-toastify";
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user, isSignin } = useSelector((state) => state.user);
 
   const [login, { isSuccess, error, data: loginData, isLoading }] =
     useLoginMutation();
@@ -71,6 +72,12 @@ const Login = () => {
       }, 1500);
     }
   }, [isSuccess, loginData, dispatch, navigate]);
+
+  useEffect(() => {
+    if (isSignin && user?.id) {
+      navigate("/");
+    }
+  }, [isSignin, user, navigate]);
 
   return (
     <div className='login d-flex-center'>

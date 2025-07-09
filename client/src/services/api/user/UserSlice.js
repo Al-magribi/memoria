@@ -44,7 +44,11 @@ const UserSlice = createSlice({
           state.user = payload;
           state.isSignin = true;
         }
-      );
+      )
+      .addMatcher(UserApi.endpoints.loadUser.matchRejected, (state) => {
+        state.user = {};
+        state.isSignin = false;
+      });
   },
 });
 

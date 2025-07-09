@@ -28,17 +28,21 @@
       .user-info {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: space-between;
         margin-bottom: 10px;
 
-        img {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
         .user-details {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
           .name {
             margin: 0;
             color: var(--text-color);
