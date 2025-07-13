@@ -42,7 +42,7 @@ const router = express.Router();
 router.get("/get-stories", verify(), async (req, res) => {
   try {
     const stories = await Story.find()
-      .populate("user", "_id name profilePicture")
+      .populate("user", "_id firstName lastName profilePicture")
       .sort({ createdAt: -1 });
     // Group by user
     const grouped = {};
@@ -79,7 +79,7 @@ router.get("/story/:storyId", verify(), async (req, res) => {
     const { storyId } = req.params;
     const story = await Story.findById(storyId).populate(
       "user",
-      "_id name profilePicture"
+      "_id firstName lastName profilePicture"
     );
     if (!story) return res.status(404).json({ error: "Story not found" });
     res.json(story);

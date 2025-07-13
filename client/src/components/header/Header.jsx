@@ -122,15 +122,15 @@ const Header = () => {
     setMenuOpen(false);
   };
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isSignin || !user?.id || Object.keys(user).length === 0) {
-        navigate("/signin");
-      }
-    }, 500);
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => {
+  //     if (!isSignin || !user?.id || Object.keys(user).length === 0) {
+  //       navigate("/signin");
+  //     }
+  //   }, 500);
 
-    return () => clearTimeout(timeout);
-  }, [user, isSignin, navigate]);
+  //   return () => clearTimeout(timeout);
+  // }, [user, isSignin, navigate]);
 
   return (
     <div className='header'>

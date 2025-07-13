@@ -121,11 +121,11 @@ const Stories = () => {
               <div className='story-avatar'>
                 <img
                   src={userStories.user.profilePicture}
-                  alt={userStories.user.name}
+                  alt={`${userStories.user.firstName} ${userStories.user.lastName}`}
                 />
               </div>
               <div className='story-name'>
-                <p>{userStories.user.name}</p>
+                <p>{`${userStories.user.firstName} ${userStories.user.lastName}`}</p>
               </div>
             </div>
           ))}
@@ -145,10 +145,10 @@ const Stories = () => {
             <div className='story-modal-header'>
               <img
                 src={modal.user.profilePicture}
-                alt={modal.user.name}
+                alt={`${modal.user.firstName} ${modal.user.lastName}`}
                 className='story-modal-avatar'
               />
-              <span>{modal.user.name}</span>
+              <span>{`${modal.user.firstName} ${modal.user.lastName}`}</span>
               <button onClick={closeModal} className='close-btn'>
                 &times;
               </button>

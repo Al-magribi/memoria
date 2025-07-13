@@ -19,7 +19,21 @@ const ChatMessages = ({
               className={`message ${msg.isOwn ? "own" : "other"}`}
             >
               <div className='message-content'>
-                <p>{msg.message}</p>
+                {msg.messageType === "image" && msg.fileUrl ? (
+                  <img
+                    src={msg.fileUrl}
+                    alt={msg.message || "image"}
+                    className='chat-image-message'
+                    style={{
+                      maxWidth: 220,
+                      maxHeight: 220,
+                      borderRadius: 8,
+                      marginBottom: 6,
+                    }}
+                  />
+                ) : (
+                  <p>{msg.message}</p>
+                )}
                 <span className='message-time'>{msg.time}</span>
               </div>
             </div>
