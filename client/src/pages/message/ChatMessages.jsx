@@ -23,13 +23,13 @@ const ChatMessages = ({
                   <img
                     src={msg.fileUrl}
                     alt={msg.message || "image"}
-                    className='chat-image-message'
-                    style={{
-                      maxWidth: 220,
-                      maxHeight: 220,
-                      borderRadius: 8,
-                      marginBottom: 6,
-                    }}
+                    className='chat-media-message'
+                  />
+                ) : msg.messageType === "video" && msg.fileUrl ? (
+                  <video
+                    src={msg.fileUrl}
+                    controls
+                    className='chat-media-message'
                   />
                 ) : (
                   <p>{msg.message}</p>

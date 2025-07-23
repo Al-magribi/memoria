@@ -975,3 +975,13 @@
     transform: translateY(0);
   }
 }
+
+// Tambahan agar media (gambar/video) pada chat konsisten dengan bubble chat
+.chat-media-message {
+  width: 100%;
+  max-width: 100%;
+  border-radius: inherit;
+  display: block;
+  margin-bottom: 6px;
+  object-fit: cover;
+}

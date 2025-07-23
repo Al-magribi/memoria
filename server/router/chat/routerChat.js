@@ -45,6 +45,7 @@ router.get("/chats", verify(), async (req, res) => {
         name: otherParticipant?.username || "Unknown User",
         avatar: otherParticipant?.profilePicture || "/profiles/user.jpg",
         lastMessage: lastMessage?.content || "No messages yet",
+        lastMessageType: lastMessage?.messageType || "text",
         time: lastMessage?.createdAt
           ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
               hour: "2-digit",

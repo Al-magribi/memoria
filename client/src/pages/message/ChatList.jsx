@@ -85,7 +85,13 @@ const ChatList = ({
                   <span className='chat-time'>{chat.time}</span>
                 </div>
                 <div className='chat-preview'>
-                  <p>{chat.lastMessage}</p>
+                  <p style={{ fontStyle: "italic" }}>
+                    {chat.lastMessageType === "image"
+                      ? "image"
+                      : chat.lastMessageType === "video"
+                      ? "video"
+                      : chat.lastMessage}
+                  </p>
                   {chat.unread > 0 && (
                     <div className='unread-badge'>{chat.unread}</div>
                   )}
