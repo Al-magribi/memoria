@@ -5,29 +5,39 @@ import {
   useRejectFriendRequestMutation,
 } from "../../services/api/friendship/FriendshipApi";
 import "./request.scss";
+import { useEffect } from "react";
 
 const Request = () => {
   const { data: friendRequestsData, isLoading } = useGetFriendRequestsQuery();
-  const [acceptFriendRequest] = useAcceptFriendRequestMutation();
-  const [rejectFriendRequest] = useRejectFriendRequestMutation();
+  const [
+    acceptFriendRequest,
+    { isError: isAcceptFriendRequestError, error: acceptFriendRequestError },
+  ] = useAcceptFriendRequestMutation();
+  const [
+    rejectFriendRequest,
+    { isError: isRejectFriendRequestError, error: rejectFriendRequestError },
+  ] = useRejectFriendRequestMutation();
 
   const friendRequests = friendRequestsData?.requests || [];
 
-  const handleAccept = async (friendshipId) => {
-    try {
-      await acceptFriendRequest(friendshipId);
-    } catch (error) {
-      console.error("Error accepting friend request:", error);
-    }
+  const handleAccept = (friendshipId) => {
+    acceptFriendRequest(friendshipId);
   };
 
-  const handleReject = async (friendshipId) => {
-    try {
-      await rejectFriendRequest(friendshipId);
-    } catch (error) {
-      console.error("Error rejecting friend request:", error);
-    }
+  const handleReject = (friendshipId) => {
+    rejectFriendRequest(friendshipId);
   };
+
+  useEffect(() => {
+    if (isAcceptFriendRequestError || isRejectFriendRequestError) {
+      toast.error(acceptFriendRequestError || rejectFriendRequestError);
+    }
+  }, [
+    isAcceptFriendRequestError,
+    isRejectFriendRequestError,
+    acceptFriendRequestError,
+    rejectFriendRequestError,
+  ]);
 
   if (isLoading) {
     return (

@@ -24,7 +24,9 @@
       gap: 10px;
 
       .brand-icon {
-        font-size: 1.8rem;
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
         color: var(--menu-item-color-hover);
       }
 

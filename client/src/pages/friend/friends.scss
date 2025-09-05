@@ -98,6 +98,42 @@
         background: #f0f2f5;
       }
 
+      &.online {
+        border-left: 3px solid #31a24c;
+      }
+
+      &.offline {
+        opacity: 0.8;
+      }
+
+      .friend-avatar-container {
+        position: relative;
+        flex-shrink: 0;
+
+        .friend-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          object-fit: cover;
+          margin: 0;
+        }
+
+        .online-status {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          z-index: 10;
+
+          .online-indicator {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+
       .friend-avatar {
         width: 48px;
         height: 48px;
@@ -125,6 +161,13 @@
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .friend-status {
+          font-size: 0.8rem;
+          color: #65676b;
+          margin-bottom: 0.2rem;
+          font-weight: 500;
         }
         .friend-mutual {
           font-size: 0.85rem;
@@ -167,7 +210,9 @@
           margin-top: 0.2rem;
 
           .btn-confirm,
-          .btn-delete {
+          .btn-delete,
+          .accept-btn,
+          .reject-btn {
             flex: 1;
             min-width: 0;
             font-size: 0.95rem;
@@ -180,8 +225,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 4px;
           }
-          .btn-confirm {
+          .btn-confirm,
+          .accept-btn {
             background: #1877f2;
             color: #fff;
             &:hover {
@@ -191,7 +238,8 @@
               background: #1557b0;
             }
           }
-          .btn-delete {
+          .btn-delete,
+          .reject-btn {
             background: #e4e6eb;
             color: #050505;
             &:hover {
@@ -200,9 +248,38 @@
             &:active {
               background: #ccd0d5;
             }
+
+            .loading-spinner {
+              width: 16px;
+              height: 16px;
+              border: 2px solid transparent;
+              border-top: 2px solid currentColor;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+            }
           }
         }
       }
+
+      .no-friends {
+        text-align: center;
+        padding: 2rem;
+        color: #65676b;
+
+        p {
+          margin: 0.5rem 0;
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
     }
   }
 

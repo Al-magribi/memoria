@@ -11,6 +11,7 @@ import { useGetUnreadCountQuery } from "../../services/api/notification/Notifica
 import { useGetFriendRequestsQuery } from "../../services/api/friendship/FriendshipApi";
 import { useGetChatsQuery } from "../../services/api/chat/chatApi";
 import { useSocket } from "../../context/SocketContext";
+import { checkAuthAndRedirect } from "../../utils/auth";
 
 const MobileMenu = ({ onClose, handleClick, user, unreadChatCount }) => (
   <div className='mobile-menu-panel' onClick={(e) => e.stopPropagation()}>
@@ -57,7 +58,7 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
-  const { user, isSignin } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
 
   // Get unread notification count
   const { data: unreadData } = useGetUnreadCountQuery();
@@ -122,22 +123,17 @@ const Header = () => {
     setMenuOpen(false);
   };
 
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     if (!isSignin || !user?.id || Object.keys(user).length === 0) {
-  //       navigate("/signin");
-  //     }
-  //   }, 500);
-
-  //   return () => clearTimeout(timeout);
-  // }, [user, isSignin, navigate]);
+  useEffect(() => {
+    // Check authentication and redirect if needed
+    checkAuthAndRedirect(navigate, user);
+  }, [user, navigate]);
 
   return (
     <div className='header'>
       <div className='header-container'>
         <div className='header-left'>
           <div className='brand'>
-            <Fa.FaCode className='brand-icon' />
+            <img src='/Logo.png' alt='logo' className='brand-icon' />
             <h1>Memoria</h1>
           </div>
         </div>
@@ -201,7 +197,6 @@ const Header = () => {
           onClick={() => setMenuOpen(false)}
         >
           <MobileMenu
-            open={menuOpen}
             onClose={() => setMenuOpen(false)}
             handleClick={handleClick}
             user={user}

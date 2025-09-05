@@ -571,7 +571,7 @@ router.get("/profile/:userId/stats", verify(), async (req, res) => {
 
     res.json({
       message: "User statistics retrieved successfully",
-      stats: stats,
+      stats,
       user: {
         id: user._id,
         username: user.username,
@@ -607,7 +607,7 @@ router.get("/profile/:userId/post-count", verify(), async (req, res) => {
 
     res.json({
       message: "Post count retrieved successfully",
-      postsCount: postsCount,
+      postsCount,
       user: {
         id: user._id,
         username: user.username,

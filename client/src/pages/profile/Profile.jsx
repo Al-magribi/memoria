@@ -3,13 +3,7 @@ import Layout from "../../components/layout/Layout";
 import "./profile.scss";
 import About from "./About";
 import Posts from "./Posts";
-import FriendButton from "../../components/friendbutton/FriendButton";
-import {
-  FaCloudUploadAlt,
-  FaUserFriends,
-  FaRegImages,
-  FaRegFileVideo,
-} from "react-icons/fa";
+import { FaCloudUploadAlt, FaUserFriends, FaRegImages } from "react-icons/fa";
 import { MdPostAdd } from "react-icons/md";
 import { useSelector } from "react-redux";
 import {
@@ -19,6 +13,9 @@ import {
   useGetUserPostCountQuery,
 } from "../../services/api/user/UserApi";
 import Loading from "../../components/loading/Loading";
+
+const PhotoPlaceholder =
+  "https://avitek.vn/wp-content/uploads/2020/08/Image-Placeholder-Dark.png";
 
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
@@ -88,7 +85,11 @@ const Profile = () => {
         <div className='profile-content'>
           {/* Cover Photo Section */}
           <div className='cover-photo'>
-            <img src={user?.coverPhoto} alt='Cover' loading='lazy' />
+            <img
+              src={user?.coverPhoto || PhotoPlaceholder}
+              alt='Cover'
+              loading='lazy'
+            />
             <div
               className='cover-photo-overlay'
               onClick={triggerCoverPhotoUpload}
@@ -108,7 +109,7 @@ const Profile = () => {
 
             <div className='profile-picture'>
               <img
-                src={user?.profilePicture}
+                src={user?.profilePicture || PhotoPlaceholder}
                 alt={user?.fullName || "Profile"}
                 loading='lazy'
               />
@@ -159,11 +160,7 @@ const Profile = () => {
                   <span>{statsData?.stats?.photosCount ?? 0}</span>
                   <span className='stat-label'>Photos</span>
                 </div>
-                <div className='stat-item' title='Videos'>
-                  <FaRegFileVideo className='stat-icon' />
-                  <span>{statsData?.stats?.videosCount ?? 0}</span>
-                  <span className='stat-label'>Videos</span>
-                </div>
+
                 <div className='stat-item' title='Friends'>
                   <FaUserFriends className='stat-icon' />
                   <span>{statsData?.stats?.friendsCount ?? 0}</span>

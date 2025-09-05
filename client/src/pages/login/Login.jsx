@@ -5,11 +5,12 @@ import { useLoginMutation } from "../../services/api/user/UserApi";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "../../services/api/user/UserSlice";
 import { toast } from "react-toastify";
+import { isAuthenticated } from "../../utils/auth";
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user, isSignin } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
 
   const [login, { isSuccess, error, data: loginData, isLoading }] =
     useLoginMutation();
@@ -74,10 +75,11 @@ const Login = () => {
   }, [isSuccess, loginData, dispatch, navigate]);
 
   useEffect(() => {
-    if (isSignin && user?.id) {
+    // Check if user is already signed in from localStorage
+    if (isAuthenticated() && user?.id) {
       navigate("/");
     }
-  }, [isSignin, user, navigate]);
+  }, [user, navigate]);
 
   return (
     <div className='login d-flex-center'>

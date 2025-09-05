@@ -54,6 +54,15 @@ export const FriendshipApi = createApi({
       providesTags: ["Friendship"],
     }),
 
+    // Get friends list with online status
+    getFriendsWithOnlineStatus: builder.query({
+      query: () => ({
+        url: "/friends/online",
+        method: "GET",
+      }),
+      providesTags: ["Friendship"],
+    }),
+
     // Get friendship status
     getFriendshipStatus: builder.query({
       query: (userId) => ({
@@ -89,6 +98,7 @@ export const {
   useRejectFriendRequestMutation,
   useGetFriendRequestsQuery,
   useGetFriendsQuery,
+  useGetFriendsWithOnlineStatusQuery,
   useGetFriendshipStatusQuery,
   useGetMutualFriendsQuery,
   useGetFriendshipSuggestionsQuery,

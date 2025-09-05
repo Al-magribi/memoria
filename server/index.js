@@ -5,6 +5,14 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import Chat from "./models/ChatSchema.js";
 import jwt from "jsonwebtoken";
+import path from "path";
+import { fileURLToPath } from "url";
+import express from "express";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, "../client/dist")));
 
 const server = createServer(app);
 // Ganti inisialisasi io agar mendukung CORS
@@ -18,6 +26,9 @@ const io = new Server(server, {
 
 // Store online users
 const onlineUsers = new Map();
+
+// Make onlineUsers available to Express app
+app.set("socketIO", { onlineUsers });
 
 // Socket.IO middleware for authentication
 io.use((socket, next) => {
@@ -145,8 +156,8 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello World");
+app.get("/{*splat}", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
 });
 
 server.listen(process.env.PORT, async () => {

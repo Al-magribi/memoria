@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Lia from "react-icons/lia";
 import * as Fa from "react-icons/fa";
 import {
@@ -10,41 +10,6 @@ import { formatDistanceToNow } from "date-fns";
 import "./notif.scss";
 
 const Notif = () => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Fetch notifications
-  const {
-    data: notificationsData,
-    isLoading,
-    error,
-  } = useGetNotificationsQuery({
-    page: 1,
-    limit: 10,
-  });
-
-  // Mutations
-  const [markAsRead] = useMarkAsReadMutation();
-  const [markAllAsRead] = useMarkAllAsReadMutation();
-
-  const notifications = notificationsData?.notifications || [];
-  const unreadCount = notificationsData?.unreadCount || 0;
-
-  const handleMarkAsRead = async (notificationId) => {
-    try {
-      await markAsRead(notificationId).unwrap();
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await markAllAsRead().unwrap();
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-    }
-  };
-
   const getNotificationIcon = (type) => {
     switch (type) {
       case "friend_request":
@@ -77,6 +42,43 @@ const Notif = () => {
       return "recently";
     }
   };
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Fetch notifications
+  const {
+    data: notificationsData,
+    isLoading,
+    error,
+  } = useGetNotificationsQuery({
+    page: 1,
+    limit: 10,
+  });
+
+  // Mutations
+  const [markAsRead, { isError, error: markAsReadError }] =
+    useMarkAsReadMutation();
+  const [
+    markAllAsRead,
+    { isError: isMarkAllAsReadError, error: markAllAsReadError },
+  ] = useMarkAllAsReadMutation();
+
+  const notifications = notificationsData?.notifications || [];
+  const unreadCount = notificationsData?.unreadCount || 0;
+
+  const handleMarkAsRead = (notificationId) => {
+    markAsRead(notificationId);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  useEffect(() => {
+    if (isError || isMarkAllAsReadError) {
+      toast.error(markAsReadError || markAllAsReadError);
+    }
+  }, [isError, isMarkAllAsReadError, markAsReadError, markAllAsReadError]);
 
   if (isLoading) {
     return (

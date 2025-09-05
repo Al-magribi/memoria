@@ -35,18 +35,6 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Post",
     },
-    comment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Comment",
-    },
-    story: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Story",
-    },
-    message: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Message",
-    },
     friendship: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Friendship",
@@ -129,7 +117,6 @@ notificationSchema.statics.getNotifications = function (
   })
     .populate("sender", "firstName lastName username profilePicture")
     .populate("post", "content images")
-    .populate("comment", "content")
     .populate("friendship")
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)

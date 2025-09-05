@@ -1,0 +1,33 @@
+.online-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .online-indicator {
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+
+    &.online {
+      color: #31a24c;
+    }
+
+    &.offline {
+      color: #65676b;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .online-status {
+    .status-text {
+      font-size: 0.75rem;
+    }
+  }
+}

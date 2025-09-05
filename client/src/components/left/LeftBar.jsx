@@ -9,6 +9,7 @@ import { useGetChatsQuery } from "../../services/api/chat/chatApi";
 import { useSocket } from "../../context/SocketContext";
 import { toast } from "react-toastify";
 import Loading from "../loading/Loading";
+import { isAuthenticated } from "../../utils/auth";
 
 const coverPhotoPlaceholder =
   "https://avitek.vn/wp-content/uploads/2020/08/Image-Placeholder-Dark.png";
@@ -35,8 +36,29 @@ const LeftBar = () => {
   const { socket } = useSocket();
 
   const handleLogout = async () => {
-    logout();
-    dispatch(setLogout());
+    try {
+      console.log("Logout started");
+      // Disconnect socket before logout
+      if (socket) {
+        socket.disconnect();
+      }
+
+      const result = await logout().unwrap();
+      console.log("Logout API call successful:", result);
+
+      // Clear Redux state and localStorage
+      dispatch(setLogout());
+
+      // Force navigation after successful logout
+      toast.success(result?.message || "Logged out successfully");
+      navigate("/signin");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Even if API call fails, clear local state
+      dispatch(setLogout());
+      toast.error("Logout failed. Please try again.");
+      navigate("/signin");
+    }
   };
 
   // Calculate total unread messages from all chats
@@ -84,15 +106,26 @@ const LeftBar = () => {
   }, [socket, refetchChats]);
 
   useEffect(() => {
-    if (isSuccess) {
-      navigate("/signin");
-      toast.success(data?.message);
-    }
-
     if (error) {
-      toast.error(error?.data?.message);
+      toast.error(error?.data?.message || "Logout failed");
     }
-  }, [isSuccess, data, error]);
+  }, [error]);
+
+  // Watch for authentication state change and navigate immediately
+  useEffect(() => {
+    // Check if user is signed in from localStorage
+    const isSigninFromStorage = isAuthenticated();
+    console.log(
+      "isSignin from localStorage:",
+      isSigninFromStorage,
+      "user:",
+      user
+    );
+    if (!isSigninFromStorage) {
+      console.log("Navigating to /signin");
+      navigate("/signin");
+    }
+  }, [navigate, user]);
 
   // Hanya render di desktop
   if (window.innerWidth <= 1024) return null;
@@ -133,7 +166,7 @@ const LeftBar = () => {
             </li>
             <li
               className={`menu-item ${pathname === "/profile" ? "active" : ""}`}
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate(`/profile?id=${user?.id}`)}
             >
               <Fa.FaUser className='menu-icon' />
               <span>Profile</span>

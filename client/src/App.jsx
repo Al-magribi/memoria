@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { useLoadUserQuery } from "./services/api/user/UserApi";
 import { setUser } from "./services/api/user/UserSlice";
+import { isAuthenticated, clearAuthentication } from "./utils/auth";
 
 const Register = lazy(() => import("./pages/register/register"));
 const Home = lazy(() => import("./pages/home/Home"));
@@ -18,7 +19,14 @@ const Setting = lazy(() => import("./pages/setting/Setting"));
 
 function App() {
   const dispatch = useDispatch();
-  const { data, isLoading, error } = useLoadUserQuery();
+
+  // Check if user is signed in from localStorage
+  const isSigninFromStorage = isAuthenticated();
+
+  // Only call loadUser if user is signed in according to localStorage
+  const { data, isLoading, error } = useLoadUserQuery(undefined, {
+    skip: !isSigninFromStorage,
+  });
 
   useEffect(() => {
     let timeoutId;
@@ -29,6 +37,8 @@ function App() {
       } else if (error) {
         console.log(error);
         // Don't set any user data if there's an error
+        // Also remove isSignin from localStorage on error
+        clearAuthentication();
       }
     } else {
       timeoutId = setTimeout(() => {

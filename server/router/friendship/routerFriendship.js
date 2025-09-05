@@ -262,6 +262,59 @@ router.get("/friends", verify(), async (req, res) => {
   }
 });
 
+// Get friends list with online status
+router.get("/friends/online", verify(), async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const friendships = await Friendship.getFriends(userId);
+
+    // Get online users from socket server
+    const { onlineUsers } = req.app.get("socketIO") || {
+      onlineUsers: new Map(),
+    };
+
+    const friends = await Promise.all(
+      friendships.map(async (friendship) => {
+        const friend =
+          friendship.requester._id.toString() === userId.toString()
+            ? friendship.recipient
+            : friendship.requester;
+
+        // Calculate mutual friends count in real-time
+        const mutualCount = await Friendship.calculateMutualFriendsCount(
+          userId,
+          friend._id
+        );
+
+        // Check if friend is online
+        const isOnline = onlineUsers.has(friend._id.toString());
+
+        return {
+          id: friend._id,
+          firstName: friend.firstName,
+          lastName: friend.lastName,
+          username: friend.username,
+          profilePicture: friend.profilePicture,
+          bio: friend.bio,
+          lastSeen: friend.lastSeen,
+          mutualFriendsCount: mutualCount,
+          friendshipId: friendship._id,
+          isOnline,
+        };
+      })
+    );
+
+    res.json({
+      message: "Friends list with online status retrieved successfully",
+      friends,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error getting friends list", error: error.message });
+  }
+});
+
 // Get mutual friends
 router.get("/mutual/:userId", verify(), async (req, res) => {
   try {

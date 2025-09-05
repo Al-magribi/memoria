@@ -49,10 +49,6 @@ const chatSchema = new mongoose.Schema(
       },
     ],
     messages: [messageSchema],
-    lastMessage: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Message",
-    },
     unreadCount: {
       type: Map,
       of: Number,
@@ -68,13 +64,6 @@ const chatSchema = new mongoose.Schema(
 chatSchema.index({ participants: 1 });
 chatSchema.index({ "messages.createdAt": -1 });
 chatSchema.index({ updatedAt: -1 });
-
-// Virtual for getting the other participant in a 1-on-1 chat
-chatSchema.virtual("otherParticipant").get(function () {
-  return this.participants.find(
-    (participant) => participant.toString() !== this.currentUser?.toString()
-  );
-});
 
 // Method to add a message to the chat
 chatSchema.methods.addMessage = function (
@@ -92,7 +81,6 @@ chatSchema.methods.addMessage = function (
   };
 
   this.messages.push(message);
-  this.lastMessage = this.messages[this.messages.length - 1]._id;
 
   // Update unread count for other participants
   this.participants.forEach((participant) => {
@@ -120,26 +108,6 @@ chatSchema.methods.markAsRead = function (userId) {
   this.unreadCount.set(userId.toString(), 0);
 
   return this.save();
-};
-
-// Static method to find or create a chat between two users
-chatSchema.statics.findOrCreateChat = async function (user1Id, user2Id) {
-  let chat = await this.findOne({
-    participants: { $all: [user1Id, user2Id] },
-    $expr: { $eq: [{ $size: "$participants" }, 2] },
-  }).populate("participants", "username profilePicture");
-
-  if (!chat) {
-    chat = new this({
-      participants: [user1Id, user2Id],
-      messages: [],
-      unreadCount: new Map(),
-    });
-    await chat.save();
-    chat = await chat.populate("participants", "username profilePicture");
-  }
-
-  return chat;
 };
 
 const Chat = mongoose.model("Chat", chatSchema);

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/layout/Layout";
 import { FaUserFriends, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
+import OnlineStatus from "../../components/right/OnlineStatus";
+import "../../components/right/OnlineStatus.scss";
 import UserSearch from "../../components/search/UserSearch";
 import {
   useGetFriendRequestsQuery,
-  useGetFriendsQuery,
+  useGetFriendsWithOnlineStatusQuery,
   useAcceptFriendRequestMutation,
   useRejectFriendRequestMutation,
 } from "../../services/api/friendship/FriendshipApi";
@@ -20,7 +22,7 @@ const Friends = () => {
   const { data: friendRequestsData, isLoading: isLoadingRequests } =
     useGetFriendRequestsQuery();
   const { data: friendsData, isLoading: isLoadingFriends } =
-    useGetFriendsQuery();
+    useGetFriendsWithOnlineStatusQuery();
   const [acceptFriendRequest] = useAcceptFriendRequestMutation();
   const [rejectFriendRequest] = useRejectFriendRequestMutation();
 
@@ -79,6 +81,10 @@ const Friends = () => {
   const friendRequests = friendRequestsData?.requests || [];
   const friends = friendsData?.friends || [];
 
+  // Separate online and offline friends
+  const onlineFriends = friends.filter((friend) => friend.isOnline);
+  const offlineFriends = friends.filter((friend) => !friend.isOnline);
+
   return (
     <Layout>
       <div className='friends'>
@@ -133,47 +139,36 @@ const Friends = () => {
                           </span>
                           {request.mutualFriendsCount} mutual friends
                         </div>
-
                         <div className='friend-actions'>
                           <button
-                            className='btn-confirm'
+                            className='accept-btn'
                             onClick={(e) => {
                               e.stopPropagation();
                               handleConfirm(request.id);
                             }}
                             disabled={loadingStates[request.id]}
-                            aria-label={`Confirm ${request.requester.firstName}'s friend request`}
                           >
                             {loadingStates[request.id] ? (
-                              <span>Confirming...</span>
+                              <div className='loading-spinner'></div>
                             ) : (
-                              <>
-                                {isMobile && (
-                                  <FaCheck style={{ marginRight: "4px" }} />
-                                )}
-                                Confirm
-                              </>
+                              <FaCheck />
                             )}
+                            Accept
                           </button>
                           <button
-                            className='btn-delete'
+                            className='reject-btn'
                             onClick={(e) => {
                               e.stopPropagation();
                               handleReject(request.id);
                             }}
                             disabled={loadingStates[request.id]}
-                            aria-label={`Reject ${request.requester.firstName}'s friend request`}
                           >
                             {loadingStates[request.id] ? (
-                              <span>Rejecting...</span>
+                              <div className='loading-spinner'></div>
                             ) : (
-                              <>
-                                {isMobile && (
-                                  <FaTimes style={{ marginRight: "4px" }} />
-                                )}
-                                Reject
-                              </>
+                              <FaTimes />
                             )}
+                            Reject
                           </button>
                         </div>
                       </div>
@@ -183,28 +178,103 @@ const Friends = () => {
               </>
             )}
 
-            <h2 className='friends-title'>Friends</h2>
+            {/* Online Friends Section */}
+            {onlineFriends.length > 0 && (
+              <>
+                <h2 className='friends-title'>
+                  Online Friends ({onlineFriends.length})
+                </h2>
+                <div className='friends-list'>
+                  {onlineFriends.map((friend) => (
+                    <div
+                      key={friend.id}
+                      className='friend-item online'
+                      onClick={() => handleFriendClick(friend.id)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className='friend-avatar-container'>
+                        <img
+                          className='friend-avatar'
+                          src={
+                            friend.profilePicture ||
+                            "https://via.placeholder.com/50"
+                          }
+                          alt={`${friend.firstName} ${friend.lastName}`}
+                          loading='lazy'
+                        />
+                        <OnlineStatus
+                          userId={friend.id}
+                          isOnlineFromAPI={friend.isOnline}
+                          size='small'
+                        />
+                      </div>
+                      <div className='friend-info'>
+                        <div className='friend-name'>
+                          {friend.firstName} {friend.lastName}
+                        </div>
+                        <div className='friend-status'>Online</div>
+                        <div className='friend-mutual'>
+                          <span className='mutual-icon'>
+                            <FaUserFriends />
+                          </span>
+                          {friend.mutualFriendsCount} mutual friends
+                        </div>
+                        {isMobile && (
+                          <div
+                            style={{
+                              fontSize: "0.8rem",
+                              color: "#65676b",
+                              marginTop: "0.5rem",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            Tap to view profile
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* All Friends Section */}
+            <h2 className='friends-title'>All Friends ({friends.length})</h2>
             <div className='friends-list'>
               {friends.length > 0 ? (
                 friends.map((friend) => (
                   <div
                     key={friend.id}
-                    className='friend-item'
+                    className={`friend-item ${
+                      friend.isOnline ? "online" : "offline"
+                    }`}
                     onClick={() => handleFriendClick(friend.id)}
                     style={{ cursor: "pointer" }}
                   >
-                    <img
-                      className='friend-avatar'
-                      src={
-                        friend.profilePicture ||
-                        "https://via.placeholder.com/50"
-                      }
-                      alt={`${friend.firstName} ${friend.lastName}`}
-                      loading='lazy'
-                    />
+                    <div className='friend-avatar-container'>
+                      <img
+                        className='friend-avatar'
+                        src={
+                          friend.profilePicture ||
+                          "https://via.placeholder.com/50"
+                        }
+                        alt={`${friend.firstName} ${friend.lastName}`}
+                        loading='lazy'
+                      />
+                      {friend.isOnline && (
+                        <OnlineStatus
+                          userId={friend.id}
+                          isOnlineFromAPI={friend.isOnline}
+                          size='small'
+                        />
+                      )}
+                    </div>
                     <div className='friend-info'>
                       <div className='friend-name'>
                         {friend.firstName} {friend.lastName}
+                      </div>
+                      <div className='friend-status'>
+                        {friend.isOnline ? "Online" : "Offline"}
                       </div>
                       <div className='friend-mutual'>
                         <span className='mutual-icon'>
@@ -228,14 +298,9 @@ const Friends = () => {
                   </div>
                 ))
               ) : (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "2rem",
-                    color: "#65676b",
-                  }}
-                >
-                  No friends yet. Start connecting with people!
+                <div className='no-friends'>
+                  <p>No friends yet</p>
+                  <p>Start connecting with people!</p>
                 </div>
               )}
             </div>

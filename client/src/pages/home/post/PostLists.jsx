@@ -1,5 +1,10 @@
 import "./postlists.scss";
-import { MdShare } from "react-icons/md";
+import {
+  MdShare,
+  MdClose,
+  MdKeyboardArrowLeft,
+  MdKeyboardArrowRight,
+} from "react-icons/md";
 import { FaRegHeart } from "react-icons/fa";
 import CommentSection from "../../../components/comment/CommentSection";
 import { useGetFeedPostsQuery } from "../../../services/api/post/PostApi";
@@ -56,13 +61,13 @@ const PostLists = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <button className='media-modal-close' onClick={closeModal}>
-              ×
+              <MdClose />
             </button>
             <button className='media-modal-prev' onClick={prevMedia}>
-              &lt;
+              <MdKeyboardArrowLeft />
             </button>
             <button className='media-modal-next' onClick={nextMedia}>
-              &gt;
+              <MdKeyboardArrowRight />
             </button>
             {modalMedia[modalIndex]?.type === "image" ? (
               <img

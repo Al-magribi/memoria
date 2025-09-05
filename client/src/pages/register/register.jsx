@@ -3,21 +3,18 @@ import "./register.scss";
 import { useNavigate } from "react-router-dom";
 import { MdExpandMore } from "react-icons/md";
 import { useRegisterMutation } from "../../services/api/user/UserApi";
-import { useDispatch } from "react-redux";
-import { setUser } from "../../services/api/user/UserSlice";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import { isAuthenticated } from "../../utils/auth";
 
 const Register = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
-  const { user, isSignin } = useSelector((state) => state.user);
+  const { user } = useSelector((state) => state.user);
 
   const [isMobile, setIsMobile] = useState(false);
   const [errors, setErrors] = useState({});
-  const [register, { isSuccess, error, data: registerData, isLoading }] =
-    useRegisterMutation();
+  const [register, { isLoading }] = useRegisterMutation();
 
   const [data, setData] = useState({
     username: "",
@@ -126,13 +123,11 @@ const Register = () => {
       });
 
       // If we reach here, registration was successful
-      if (result && result.user) {
-        dispatch(setUser(result.user));
-        // Navigate to home page after successful registration
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
-      }
+      // Redux slice will handle setting user and authentication state
+      // Just navigate to home page
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
     } catch (error) {
       // Error is already handled by toast.promise
       console.error("Registration error:", error);
@@ -150,22 +145,12 @@ const Register = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Handle successful registration
   useEffect(() => {
-    if (isSuccess && registerData) {
-      dispatch(setUser(registerData.user));
-      // Navigate to home page after successful registration
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
-    }
-  }, [isSuccess, registerData, dispatch, navigate]);
-
-  useEffect(() => {
-    if (isSignin && user?.id) {
+    // Check if user is already signed in from localStorage
+    if (isAuthenticated() && user?.id) {
       navigate("/");
     }
-  }, [isSignin, user, navigate]);
+  }, [user, navigate]);
 
   return (
     <div className='register d-flex-center'>

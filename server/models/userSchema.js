@@ -293,12 +293,6 @@ UserSchema.statics.getUserWithPostCount = async function (userId) {
   return userObj;
 };
 
-UserSchema.statics.getFriendsCount = async function (userId) {
-  const Friendship = mongoose.model("Friendship");
-  const friendships = await Friendship.getFriends(userId);
-  return friendships.length;
-};
-
 UserSchema.statics.calculateUserStats = async function (userId) {
   const Post = mongoose.model("Post");
   const Friendship = mongoose.model("Friendship");
@@ -316,13 +310,6 @@ UserSchema.statics.calculateUserStats = async function (userId) {
     images: { $exists: true, $ne: [] },
   });
 
-  // Count videos (posts with videos)
-  const videosCount = await Post.countDocuments({
-    author: userId,
-    isDeleted: false,
-    videos: { $exists: true, $ne: [] },
-  });
-
   // Count friends (real-time)
   const friendsCount = await Friendship.getFriends(userId).then(
     (f) => f.length
@@ -331,7 +318,6 @@ UserSchema.statics.calculateUserStats = async function (userId) {
   return {
     postsCount,
     photosCount,
-    videosCount,
     friendsCount,
   };
 };

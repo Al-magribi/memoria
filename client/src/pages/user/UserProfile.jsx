@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "../../components/layout/Layout";
-import FriendButton from "../../components/friend/FriendButton";
-import { FaUserFriends, FaRegImages, FaRegFileVideo } from "react-icons/fa";
+import { FaUserFriends, FaRegImages } from "react-icons/fa";
 import { MdPostAdd } from "react-icons/md";
 import { useSelector } from "react-redux";
 import Loading from "../../components/loading/Loading";
@@ -101,12 +100,6 @@ const UserProfile = () => {
                 <div className='username'>@{userProfile.username}</div>
                 <p className='bio'>{userProfile.bio}</p>
               </div>
-              <div className='profile-actions'>
-                <FriendButton
-                  userId={userProfile.id}
-                  className='profile-friend-btn'
-                />
-              </div>
             </div>
 
             {/* Statistics */}
@@ -121,11 +114,7 @@ const UserProfile = () => {
                 <span>{userProfile.stats?.photosCount || 0}</span>
                 <span className='stat-label'>Photos</span>
               </div>
-              <div className='stat-item' title='Videos'>
-                <FaRegFileVideo className='stat-icon' />
-                <span>{userProfile.stats?.videosCount || 0}</span>
-                <span className='stat-label'>Videos</span>
-              </div>
+
               <div className='stat-item' title='Friends'>
                 <FaUserFriends className='stat-icon' />
                 <span>{userProfile.stats?.friendsCount || 0}</span>
