@@ -26,7 +26,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const newSocket = io("http://localhost:2010", {
+    const newSocket = io(import.meta.env.VITE_API, {
       auth: { token },
       transports: ["websocket", "polling"],
       withCredentials: true,
