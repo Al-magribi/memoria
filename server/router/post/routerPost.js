@@ -303,6 +303,7 @@ router.post("/add-comment/:postId", verify(), async (req, res) => {
       comment: post.comments[post.comments.length - 1],
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -353,6 +354,40 @@ router.post(
       res.json({ message: "Comment like toggled successfully" });
     } catch (error) {
       res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+router.delete(
+  "/delete-comment/:postId/comments/:commentId",
+  verify(),
+  async (req, res) => {
+    try {
+      const { postId, commentId } = req.params;
+      const userId = req.user._id; // <-- Gunakan _id yang merupakan ObjectId
+
+      const post = await Post.findById(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Panggil instance method dari skema yang sudah diperbaiki
+      // parseInt() diperlukan karena commentId dari params adalah string
+      await post.deleteComment(commentId, userId);
+
+      res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (error) {
+      // Menangani error yang dilempar dari metode skema
+      if (error.message === "Not authorized") {
+        return res
+          .status(403)
+          .json({ message: "You are not authorized to delete this comment" });
+      }
+      if (error.message === "Comment not found") {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      // Untuk error lainnya
+      res.status(500).json({ message: "Server error while deleting comment" });
     }
   }
 );

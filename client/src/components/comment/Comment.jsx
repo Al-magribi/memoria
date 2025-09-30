@@ -48,7 +48,7 @@ const Comment = ({ comment, onReply, onDelete, onLike, currentUser }) => {
   const handleReply = () => {
     if (replyText.trim()) {
       // Pastikan tidak kosong
-      onReply(comment.id, replyText); // Kirim ke parent component
+      onReply(comment._id, replyText); // Kirim ke parent component
       setReplyText(""); // Reset input text
       setIsReplying(false); // Tutup form reply
     }
@@ -69,7 +69,7 @@ const Comment = ({ comment, onReply, onDelete, onLike, currentUser }) => {
    * Panggil function onLike dari parent dengan ID komentar
    */
   const handleLike = () => {
-    onLike(comment.id); // Kirim ID ke parent component
+    onLike(comment._id); // Kirim ID ke parent component
   };
 
   /**
@@ -107,7 +107,7 @@ const Comment = ({ comment, onReply, onDelete, onLike, currentUser }) => {
         {currentUser?.id === comment.author.id && (
           <button
             className='comment-delete'
-            onClick={() => onDelete(comment.id)} // Panggil function delete
+            onClick={() => onDelete(comment._id)} // Panggil function delete
           >
             <FaTrash />
           </button>

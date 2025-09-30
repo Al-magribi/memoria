@@ -46,10 +46,6 @@ const postSchema = new mongoose.Schema(
     ],
     comments: [
       {
-        id: {
-          type: Number,
-          required: true,
-        },
         content: {
           type: String,
           required: true,
@@ -62,7 +58,8 @@ const postSchema = new mongoose.Schema(
         },
         author: {
           id: {
-            type: Number,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
             required: true,
           },
           name: {
@@ -85,10 +82,6 @@ const postSchema = new mongoose.Schema(
         ],
         replies: [
           {
-            id: {
-              type: Number,
-              required: true,
-            },
             content: {
               type: String,
               required: true,
@@ -101,7 +94,8 @@ const postSchema = new mongoose.Schema(
             },
             author: {
               id: {
-                type: Number,
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
                 required: true,
               },
               name: {
@@ -190,7 +184,6 @@ postSchema.pre("save", function (next) {
 // Instance Methods
 postSchema.methods.addComment = function (commentData) {
   const newComment = {
-    id: Date.now() + Math.random(),
     content: commentData.content,
     createdAt: new Date(),
     author: {
@@ -210,7 +203,6 @@ postSchema.methods.addReply = function (commentId, replyData) {
     return comments.map((comment) => {
       if (comment.id === commentId) {
         const newReply = {
-          id: Date.now() + Math.random(),
           content: replyData.content,
           createdAt: new Date(),
           author: {
@@ -253,19 +245,26 @@ postSchema.methods.toggleCommentLike = function (commentId, userId) {
   this.comments = toggleLikeInComments(this.comments);
   return this.save();
 };
-postSchema.methods.deleteComment = function (commentId) {
-  const deleteCommentFromComments = (comments) => {
-    return comments.filter((comment) => {
-      if (comment.id === commentId) {
-        return false;
-      }
-      if (comment.replies) {
-        comment.replies = deleteCommentFromComments(comment.replies);
-      }
-      return true;
-    });
-  };
-  this.comments = deleteCommentFromComments(this.comments);
+
+postSchema.methods.deleteComment = async function (commentId, userId) {
+  // Temukan komentar di dalam array `comments`
+  const comment = this.comments.id(commentId);
+
+  // Jika komentar tidak ditemukan, lempar error
+  if (!comment) {
+    throw new Error("Comment not found");
+  }
+
+  // Verifikasi bahwa user yang menghapus adalah pemilik komentar
+  // Gunakan .equals() untuk membandingkan ObjectId
+  if (!comment.author.id.equals(userId)) {
+    throw new Error("Not authorized");
+  }
+
+  // Hapus komentar dari array
+  comment.deleteOne();
+
+  // Simpan perubahan pada dokumen post
   return this.save();
 };
 
