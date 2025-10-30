@@ -1,0 +1,24 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.ant-carousel .slick-prev,
+.ant-carousel .slick-next {
+  font-size: inherit;
+  color: black;
+}
+
+.hide-scrollbar {
+  /* Untuk Firefox */
+  scrollbar-width: none;
+
+  /* Untuk Internet Explorer dan Edge (versi lama) */
+  -ms-overflow-style: none;
+}
+
+/* Untuk Chrome, Safari, dan Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
