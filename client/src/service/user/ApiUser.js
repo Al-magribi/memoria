@@ -10,7 +10,7 @@ export const ApiUser = createApi({
   endpoints: (builder) => ({
     signin: builder.mutation({
       query: (body) => ({
-        url: "/register",
+        url: "/signup",
         method: "POST",
         body,
       }),
@@ -112,7 +112,7 @@ export const ApiUser = createApi({
 });
 
 export const {
-  useRegisterMutation,
+  useSigninMutation,
   useLoginMutation,
   useLogoutMutation,
   useLoadUserQuery,

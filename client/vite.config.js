@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiUrl = env.VITE_API;
+  const apiUrl = env.VITE_API_URL;
 
   console.log("Mode: ", mode);
   console.log("API: ", apiUrl);

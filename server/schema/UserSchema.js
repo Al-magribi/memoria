@@ -18,7 +18,6 @@ const UserSchema = new mongoose.Schema(
     username: {
       type: String,
       trim: true,
-      required: [true, "Username is required"],
       unique: true,
       lowercase: true,
       index: true,
@@ -79,14 +78,13 @@ const UserSchema = new mongoose.Schema(
         ],
       },
     },
-    dateOfBirth: {
+    dob: {
       type: Date,
       required: [true, "Date of birth is required"],
     },
     gender: {
       type: String,
       enum: ["Male", "Female", "Other", "Prefer not to say"],
-      required: [true, "Gender is required"],
     },
     website: { type: String, trim: true },
     location: { type: String, trim: true },

@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS, // Pastikan ini menggunakan Sandi Aplikasi
   },
 });
 
@@ -39,11 +39,7 @@ export const sendActivationEmail = async (email, name, activationCode) => {
     `,
   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    return true;
-  } catch (error) {
-    console.error("Email sending error:", error);
-    return false;
-  }
+  // HAPUS try...catch di sini. Biarkan error dilempar ke router.
+  await transporter.sendMail(mailOptions);
+  return true; // Jika sukses
 };

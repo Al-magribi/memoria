@@ -5,7 +5,7 @@ import { isAuthenticated } from "../../utils/auth";
 const PrivateRoute = () => {
   // Periksa apakah pengguna sudah login
   // Jika pengguna belum login, arahkan ke halaman login
-  return isAuthenticated() ? <Outlet /> : <Navigate to='/login' />;
+  return isAuthenticated() ? <Outlet /> : <Navigate to="/signin" />;
 };
 
 export default PrivateRoute;

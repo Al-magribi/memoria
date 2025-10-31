@@ -9,49 +9,55 @@ const router = Router();
 // User Signup
 router.post("/signup", async (req, res) => {
   try {
-    const { firstName, lastName, username, dob, email, password } = req.body;
+    const { firstName, lastName, dob, email, password } = req.body;
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
         .status(409)
         .json({ message: "Username or email already exists" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
+    // 1. Buat user baru di memori (JANGAN .save() dulu)
     const newUser = new User({
       firstName,
       lastName,
-      username,
       dob,
       email,
-      password: hashedPassword,
+      password,
     });
 
-    await newUser.save();
-
-    // Create a verification token
+    // 2. Buat token verifikasi (ini akan disimpan di objek newUser)
     const verificationToken = newUser.createVerificationToken();
-    await newUser.save({ validateBeforeSave: false });
 
-    // Send activation email
+    // 3. Coba kirim email AKTIVASI DULU
     await sendActivationEmail(
       newUser.email,
       newUser.firstName,
       verificationToken
     );
 
-    const { password: _, ...user } = newUser._doc;
+    // 4. JIKA email berhasil terkirim, BARU simpan user ke database
+    await newUser.save();
 
     res.status(201).json({
-      message: "Signup successful! Please check your email to activate your account.",
-      user: user,
+      message:
+        "Signup successful! Please check your inbox or spam to activate your account.",
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
+    console.log(error); // Akan menampilkan error (termasuk error EAUTH jika belum diperbaiki)
+
+    // Kirim response error yang lebih spesifik jika ini error email
+    if (error.code === "EAUTH" || error.command === "AUTH PLAIN") {
+      return res.status(500).json({
+        message: "Email service failed to authenticate. User not created.",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to create user. Please try again later.",
+      error: error.message,
+    });
   }
 });
 
