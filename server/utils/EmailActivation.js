@@ -14,12 +14,10 @@ const transporter = nodemailer.createTransport({
 
 // Send activation email
 export const sendActivationEmail = async (email, name, activationCode) => {
-  const activationUrl = `${
-    process.env.MODE === "prod" ? process.env.DOMAIN : process.env.LOCAL
-  }/activate/${activationCode}`;
+  const activationUrl = `${process.env.DOMAIN}/activation/${activationCode}`;
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.SMTP_APP,
     to: email,
     subject: "Aktivasi Akun",
     html: `

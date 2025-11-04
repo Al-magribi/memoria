@@ -14,7 +14,7 @@ import {
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-import { useSigninMutation } from "../../service/user/ApiUser";
+import { useSignupMutation } from "../../service/user/ApiUser";
 
 const { Text, Link } = Typography;
 const { Content } = Layout;
@@ -40,7 +40,7 @@ const Signup = () => {
       error: signupError,
       isSuccess: isSignupSuccess,
     },
-  ] = useSigninMutation();
+  ] = useSignupMutation();
 
   const onFinish = (values) => {
     // Validasi usia
@@ -67,8 +67,8 @@ const Signup = () => {
     <Layout style={{ minHeight: "100vh", backgroundColor: "#f0f2f5" }}>
       <Content>
         <Flex
-          align="center"
-          justify="center"
+          align='center'
+          justify='center'
           style={{
             minHeight: "100vh",
             padding: screens.xs ? "16px" : 0,
@@ -82,29 +82,29 @@ const Signup = () => {
               padding: "16px",
             }}
           >
-            <Flex vertical align="center">
+            <Flex vertical align='center'>
               <img
-                src="/logo.png"
-                alt="Memoria"
+                src='/logo.png'
+                alt='Memoria'
                 style={{ width: 44, marginBottom: 16 }}
               />
 
-              <Text type="secondary" style={{ marginBottom: 14 }}>
+              <Text type='secondary' style={{ marginBottom: 14 }}>
                 Join Memoria today!
               </Text>
             </Flex>
 
             <Form
               form={form}
-              name="register"
+              name='register'
               onFinish={onFinish}
-              layout="vertical"
-              size="small"
+              layout='vertical'
+              size='small'
             >
               {/* --- Kolom khusus REGISTER --- */}
               <Form.Item
-                name="firstName"
-                label="First Name"
+                name='firstName'
+                label='First Name'
                 rules={[
                   {
                     required: true,
@@ -114,14 +114,14 @@ const Signup = () => {
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder="First Name"
-                  size="large"
+                  placeholder='First Name'
+                  size='large'
                 />
               </Form.Item>
 
               <Form.Item
-                name="lastName"
-                label="Last Name"
+                name='lastName'
+                label='Last Name'
                 rules={[
                   {
                     required: true,
@@ -131,14 +131,14 @@ const Signup = () => {
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder="Last Name"
-                  size="large"
+                  placeholder='Last Name'
+                  size='large'
                 />
               </Form.Item>
 
               <Form.Item
-                name="dob"
-                label="Date of Birth"
+                name='dob'
+                label='Date of Birth'
                 rules={[
                   {
                     required: true,
@@ -148,15 +148,15 @@ const Signup = () => {
               >
                 <DatePicker
                   style={{ width: "100%" }}
-                  placeholder="Select your date of birth"
-                  size="large"
+                  placeholder='Select your date of birth'
+                  size='large'
                 />
               </Form.Item>
 
               {/* --- Kolom BERSAMA (Login & Register) --- */}
               <Form.Item
-                name="email"
-                label="Email"
+                name='email'
+                label='Email'
                 rules={[
                   { required: true, message: "Please input your Email!" },
                   { type: "email", message: "The input is not valid E-mail!" },
@@ -164,33 +164,33 @@ const Signup = () => {
               >
                 <Input
                   prefix={<MailOutlined />}
-                  placeholder="Email"
-                  size="large"
+                  placeholder='Email'
+                  size='large'
                 />
               </Form.Item>
 
               <Form.Item
-                name="password"
-                label="Password"
+                name='password'
+                label='Password'
                 rules={[
                   { required: true, message: "Please input your Password!" },
                 ]}
               >
                 <Input.Password
                   prefix={<LockOutlined />}
-                  type="password"
-                  placeholder="Password"
-                  size="large"
+                  type='password'
+                  placeholder='Password'
+                  size='large'
                 />
               </Form.Item>
 
               {/* --- Tombol Submit --- */}
               <Form.Item style={{ marginTop: 16 }}>
                 <Button
-                  type="primary"
-                  htmlType="submit"
+                  type='primary'
+                  htmlType='submit'
                   block
-                  size="large"
+                  size='large'
                   loading={isLoadingSignup}
                 >
                   Sign up
@@ -198,10 +198,10 @@ const Signup = () => {
               </Form.Item>
 
               {/* --- Link Toggler --- */}
-              <Flex justify="center">
+              <Flex justify='center'>
                 <Text>
                   Already have an account? {/* Ganti ke Link Href */}
-                  <Link href="/signin">Sign in</Link>
+                  <Link href='/signin'>Sign in</Link>
                 </Text>
               </Flex>
             </Form>

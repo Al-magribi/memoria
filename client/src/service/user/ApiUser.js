@@ -8,11 +8,19 @@ export const ApiUser = createApi({
   }),
   tagTypes: ["User"],
   endpoints: (builder) => ({
-    signin: builder.mutation({
+    signup: builder.mutation({
       query: (body) => ({
         url: "/signup",
         method: "POST",
         body,
+      }),
+      invalidatesTags: ["User"],
+    }),
+    activate: builder.mutation({
+      query: (body) => ({
+        url: "/activate",
+        method: "POST",
+        params: body,
       }),
       invalidatesTags: ["User"],
     }),
@@ -33,95 +41,80 @@ export const ApiUser = createApi({
     }),
     loadUser: builder.query({
       query: () => ({
-        url: "/load-user",
+        url: "/load",
         method: "GET",
       }),
       providesTags: ["User"],
     }),
-    updateProfile: builder.mutation({
-      query: ({ userId, body }) => ({
-        url: `/profile/${userId}`,
+    getProfile: builder.query({
+      query: (username) => ({
+        url: `/profile/${username}`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    getMyPhotos: builder.query({
+      query: () => ({
+        url: `/my-photos`,
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
+    updateGeneral: builder.mutation({
+      query: (body) => ({
+        url: "/settings/general",
         method: "PUT",
         body,
       }),
       invalidatesTags: ["User"],
     }),
     updatePrivacy: builder.mutation({
-      query: ({ userId, body }) => ({
-        url: `/profile/${userId}/privacy`,
+      query: (body) => ({
+        url: `/settings/privacy`,
         method: "PUT",
         body,
       }),
       invalidatesTags: ["User"],
     }),
-    updateNotifications: builder.mutation({
-      query: ({ userId, body }) => ({
-        url: `/profile/${userId}/notifications`,
+    updateDetails: builder.mutation({
+      query: (body) => ({
+        url: `/settings/details`,
         method: "PUT",
         body,
       }),
       invalidatesTags: ["User"],
     }),
-    uploadProfilePicture: builder.mutation({
-      query: ({ userId, file }) => {
+    uploadProfileImages: builder.mutation({
+      query: (files) => {
         const formData = new FormData();
-        formData.append("profilePicture", file);
+        if (files.avatar) {
+          formData.append("avatar", files.avatar);
+        }
+        if (files.cover) {
+          formData.append("cover", files.cover);
+        }
 
         return {
-          url: `/profile/upload-picture?userId=${userId}`,
+          url: `/upload-profile-images`,
           method: "POST",
           body: formData,
         };
       },
       invalidatesTags: ["User"],
-    }),
-    uploadCoverPhoto: builder.mutation({
-      query: ({ userId, file }) => {
-        const formData = new FormData();
-        formData.append("coverPhoto", file);
-
-        return {
-          url: `/profile/upload-cover?userId=${userId}`,
-          method: "POST",
-          body: formData,
-        };
-      },
-      invalidatesTags: ["User"],
-    }),
-    getUserStats: builder.query({
-      query: (userId) => ({
-        url: `/profile/${userId}/stats`,
-        method: "GET",
-      }),
-      providesTags: ["User"],
-    }),
-    getUserPostCount: builder.query({
-      query: (userId) => ({
-        url: `/profile/${userId}/post-count`,
-        method: "GET",
-      }),
-      providesTags: ["User"],
-    }),
-    getToken: builder.query({
-      query: () => ({
-        url: "/token",
-        method: "GET",
-      }),
     }),
   }),
 });
 
 export const {
-  useSigninMutation,
+  useSignupMutation,
+  useActivateMutation,
   useLoginMutation,
   useLogoutMutation,
   useLoadUserQuery,
-  useUpdateProfileMutation,
+  useGetProfileQuery,
+  useGetMyPhotosQuery,
+  useUpdateGeneralMutation,
   useUpdatePrivacyMutation,
-  useUpdateNotificationsMutation,
-  useUploadProfilePictureMutation,
-  useUploadCoverPhotoMutation,
-  useGetUserStatsQuery,
-  useGetUserPostCountQuery,
-  useGetTokenQuery,
+  useUpdateDetailsMutation,
+  useUploadProfileImagesMutation,
 } = ApiUser;

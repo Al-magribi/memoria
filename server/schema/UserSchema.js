@@ -43,19 +43,9 @@ const UserSchema = new mongoose.Schema(
     },
 
     // --- Informasi Profil ---
-    avatar: {
-      type: String,
-      default: "default_avatar_url.png",
-    },
-    coverPhoto: {
-      type: String,
-      default: "default_cover_url.png",
-    },
-    bio: {
-      type: String,
-      trim: true,
-      maxLength: 250,
-    },
+    avatar: { type: String },
+    coverPhoto: { type: String },
+    bio: { type: String, trim: true, maxLength: 250 },
     details: {
       worksAt: { type: String, trim: true },
       livesIn: { type: String, trim: true },
@@ -104,12 +94,10 @@ const UserSchema = new mongoose.Schema(
     // --- Relasi Sosial ---
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     friendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
     // --- TAMBAHAN ---
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }], // Ref ke Model 'Post'
-    stats: {
-      friendsCount: { type: Number, default: 0 },
-    },
 
     // --- Privasi ---
     privacy: {
@@ -173,6 +161,11 @@ const UserSchema = new mongoose.Schema(
 // --- 1. VIRTUAL PROPERTY ---
 UserSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
+});
+
+UserSchema.virtual("friendsCount").get(function () {
+  // Ini akan secara otomatis menghitung jumlah teman
+  return this.friends?.length;
 });
 
 // --- 2. MIDDLEWARE (pre-save hook) ---
@@ -264,9 +257,9 @@ UserSchema.statics.getPublicProfile = function (
     website: 1,
     isVerified: 1,
     lastSeen: 1,
-    stats: 1,
     createdAt: 1,
     fullName: 1,
+    friends: 1,
     // Kita tidak menyertakan 'privacy' di sini secara default
   };
 
@@ -287,7 +280,13 @@ UserSchema.statics.getPublicProfile = function (
   // Logika privasi (misal, 'friends' bisa lihat apa)
   // sebaiknya ditangani di level service/controller setelah data diambil.
 
-  return this.findById(userId).select(projection);
+  return this.findById(userId)
+    .select(projection)
+    .populate({
+      path: "friends",
+      select: "username fullName avatar",
+      options: { limit: 6 }, // <-- BATASI HANYA 6 TEMAN
+    });
 };
 
 // --- 8. Transformasi toJSON ---

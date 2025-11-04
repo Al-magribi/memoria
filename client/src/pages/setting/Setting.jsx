@@ -9,12 +9,15 @@ import MainLayout from "../../components/layout/MainLayout";
 import GeneralSettings from "./GeneralSettings";
 import SecuritySettings from "./SecuritySettings";
 import PrivacySettings from "./PrivacySettings";
+import { useSelector } from "react-redux";
 
 const { Content, Sider } = Layout;
 const { Title } = Typography;
 const { useBreakpoint } = Grid;
 
 const Setting = () => {
+  const { user } = useSelector((state) => state.user);
+
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState("general");
 
@@ -33,11 +36,7 @@ const Setting = () => {
       icon: <UserOutlined />,
       label: "General",
     },
-    {
-      key: "security",
-      icon: <LockOutlined />,
-      label: "Security and Login",
-    },
+
     // --- TAMBAHAN: Menu Item Privasi ---
     {
       key: "privacy",
@@ -45,6 +44,11 @@ const Setting = () => {
       label: "Privacy",
     },
     // ---------------------------------
+    {
+      key: "security",
+      icon: <LockOutlined />,
+      label: "Security and Login",
+    },
   ];
 
   // Definisikan 'items' untuk <Tabs> (Mobile)
@@ -52,35 +56,36 @@ const Setting = () => {
     {
       key: "general",
       label: "General",
-      children: <GeneralSettings />,
+      children: <GeneralSettings User={user} />,
     },
+
+    // --- TAMBAHAN: Tab Item Privasi ---
+    {
+      key: "privacy",
+      label: "Privacy",
+      children: <PrivacySettings User={user} />,
+    },
+    // ---------------------------------
     {
       key: "security",
       label: "Security",
       children: <SecuritySettings />,
     },
-    // --- TAMBAHAN: Tab Item Privasi ---
-    {
-      key: "privacy",
-      label: "Privacy",
-      children: <PrivacySettings />,
-    },
-    // ---------------------------------
   ];
 
   // Fungsi untuk me-render konten berdasarkan key yang dipilih
   const renderContent = (key) => {
     switch (key) {
       case "general":
-        return <GeneralSettings />;
+        return <GeneralSettings User={user} />;
       case "security":
         return <SecuritySettings />;
       // --- TAMBAHAN: Case untuk Privasi ---
       case "privacy":
-        return <PrivacySettings />;
+        return <PrivacySettings User={user} />;
       // -----------------------------------
       default:
-        return <GeneralSettings />;
+        return <GeneralSettings User={user} />;
     }
   };
 
@@ -101,10 +106,10 @@ const Setting = () => {
           />
         ) : (
           // --- TAMPILAN DESKTOP: Gunakan <Layout> + <Sider> ---
-          <Layout style={{ background: "#fff" }} direction="horizontal">
+          <Layout style={{ background: "#fff" }} direction='horizontal'>
             <Sider width={200} style={{ background: "#fff" }}>
               <Menu
-                mode="inline"
+                mode='inline'
                 selectedKeys={[selectedKey]}
                 onClick={({ key }) => setSelectedKey(key)}
                 style={{ borderRight: 1, height: "100%" }}

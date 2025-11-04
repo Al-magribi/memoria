@@ -5,10 +5,9 @@ import {
   UserOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { User } from "../../Dummies";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const Left = () => {
+const Left = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,16 +18,16 @@ const Left = () => {
 
   return (
     <Menu
-      mode="inline"
+      mode='inline'
       selectedKeys={[location.pathname]}
       onClick={handleMenuClick}
       style={{ backgroundColor: "#f0f2f5", border: "none" }}
       items={[
         {
           // 7. Gunakan path sebagai 'key' agar semantik
-          key: `/${User?.username}`,
-          icon: <Avatar src={User?.avatar} />,
-          label: User?.username,
+          key: `/${user?.username}`,
+          icon: <Avatar icon={<UserOutlined />} src={user?.avatar} />,
+          label: `@${user?.username}`,
           // Hapus onClick individual
         },
         {

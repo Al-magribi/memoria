@@ -7,12 +7,11 @@ import {
   HomeOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { User } from "../../Dummies";
 import { useNavigate } from "react-router-dom";
 
 const { useBreakpoint } = Grid;
 
-const Navbar = ({ activeTab, onChange }) => {
+const Navbar = ({ activeTab, onChange, user }) => {
   const navigate = useNavigate();
   const screens = useBreakpoint();
 
@@ -32,16 +31,16 @@ const Navbar = ({ activeTab, onChange }) => {
     >
       {/* Header Bagian Kiri: Logo & Search */}
       <Flex
-        gap="middle"
-        align="center"
+        gap='middle'
+        align='center'
         style={{ width: !screens.md ? "100%" : "285px" }}
       >
-        <img src="logo.png" alt="almadev" style={{ width: "35px" }} />
+        <img src='logo.png' alt='almadev' style={{ width: "35px" }} />
         {/* Sembunyikan input search di layar xs agar tidak terlalu penuh */}
 
         <Input
           prefix={<SearchOutlined />}
-          placeholder="Cari apapun ..."
+          placeholder='Cari apapun ...'
           style={{ borderRadius: "20px" }}
         />
       </Flex>
@@ -60,25 +59,25 @@ const Navbar = ({ activeTab, onChange }) => {
       {/* Tampilkan hanya di layar 'md' ke atas */}
       {screens.md && (
         <Flex
-          gap="middle"
-          align="center"
-          justify="center"
+          gap='middle'
+          align='center'
+          justify='center'
           style={{ width: "285px" }}
         >
           <Button
-            shape="circle"
-            size="large"
+            shape='circle'
+            size='large'
             icon={<MessageFilled />}
             onClick={() => navigate("/chat")}
           />
 
-          <Button shape="circle" size="large" icon={<BellFilled />} />
+          <Button shape='circle' size='large' icon={<BellFilled />} />
 
           <Avatar
-            size="large"
+            size='large'
             icon={<UserOutlined />}
-            src={User?.avatar}
-            onClick={() => navigate(`/${User?.username}`)}
+            src={user?.avatar}
+            onClick={() => navigate(`/${user?.username}`)}
             style={{ cursor: "pointer" }}
           />
         </Flex>

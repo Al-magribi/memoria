@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Avatar,
   Card,
@@ -7,6 +7,8 @@ import {
   Typography,
   Divider,
   Dropdown,
+  Tag,
+  Space,
 } from "antd";
 import {
   LikeOutlined,
@@ -15,27 +17,65 @@ import {
   ShareAltOutlined,
   EllipsisOutlined,
   UserOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import CommentSection from "./CommentSection";
 import MediaGrid from "./MediaGrid";
+import TimeAgo from "javascript-time-ago";
+import { useSelector } from "react-redux";
+import AddPost from "./AddPost";
+
+import { useDeletePostMutation } from "../../../service/post/ApiPost";
+import { Modal } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 
 const { Meta } = Card;
 const { Title, Text, Paragraph } = Typography;
 
-// Menu untuk tombol titik tiga (more options)
-const items = [
-  { key: "1", label: "Save Post" },
-  { key: "2", label: "Report Post" },
-  { key: "3", label: "Hide Post", danger: true },
-];
+const PostCard = ({ post, isLoading }) => {
+  const timeAgo = useMemo(() => new TimeAgo("id"), []);
 
-const PostCard = ({ post }) => {
-  // State untuk melacak status 'like' dan jumlahnya
+  const { user } = useSelector((state) => state.user);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deletePost] = useDeletePostMutation();
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: "Are you sure you want to delete this post?",
+      icon: <ExclamationCircleOutlined />,
+      content: "This action cannot be undone.",
+      onOk: async () => {
+        try {
+          await deletePost(post.id).unwrap();
+        } catch (error) {
+          console.error("Failed to delete the post: ", error);
+        }
+      },
+    });
+  };
+
+  const handleMenuClick = ({ key }) => {
+    if (key === "edit") {
+      setIsEditModalOpen(true);
+    } else if (key === "delete") {
+      handleDelete();
+    }
+  };
+
+  const menuItems = [
+    { key: "save", label: "Save Post" },
+    { key: "report", label: "Report Post" },
+  ];
+
+  if (user && post.user && user._id === post.user._id) {
+    menuItems.unshift({ key: "edit", label: "Edit Post" });
+    menuItems.push({ key: "delete", label: "Delete Post", danger: true });
+  }
+
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
 
-  // Fungsi untuk handle klik tombol like
   const handleLikeClick = () => {
     if (isLiked) {
       setLikeCount(likeCount - 1);
@@ -46,10 +86,9 @@ const PostCard = ({ post }) => {
   };
 
   const handleCommentClick = () => {
-    setShowComments(!showComments); // Toggle visibilitas
+    setShowComments(!showComments);
   };
 
-  // Komponen untuk tombol Aksi (Like, Comment, Share)
   const ActionButton = ({ icon, text, onClick, active }) => (
     <Button
       type='text'
@@ -57,7 +96,7 @@ const PostCard = ({ post }) => {
       onClick={onClick}
       style={{
         width: "100%",
-        color: active ? "#1890ff" : "inherit", // Warna biru jika aktif
+        color: active ? "#1890ff" : "inherit",
       }}
     >
       {text}
@@ -65,72 +104,87 @@ const PostCard = ({ post }) => {
   );
 
   return (
-    <Card>
-      {/* Header Kartu: Avatar, Nama, Waktu, dan Tombol Opsi */}
-      <Flex justify='space-between' align='center'>
-        <Flex gap={"middle"}>
-          <Avatar icon={<UserOutlined />} src={post.avatar} />
-          <div>
-            <Title style={{ margin: 0 }} level={5} ellipsis>
-              {post.username}
-            </Title>
-            <Text type='secondary'>{post.timestamp}</Text>
-          </div>
+    <>
+      <Card loading={isLoading}>
+        <Flex justify='space-between' align='center'>
+          <Flex gap={"middle"}>
+            <Avatar icon={<UserOutlined />} src={post.avatar} size={40} />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <Space>
+                <Title style={{ margin: 0 }} level={5} ellipsis>
+                  {post.username}
+                </Title>
+                {post.location?.display_name && (
+                  <Tag>
+                    <EnvironmentOutlined />{" "}
+                    {post.location.display_name?.split(",")[0]}
+                  </Tag>
+                )}
+              </Space>
+              <Text type='secondary'>
+                {timeAgo.format(new Date(post.timestamp))}
+              </Text>
+            </div>
+          </Flex>
+
+          <Dropdown
+            menu={{ items: menuItems, onClick: handleMenuClick }}
+            placement='bottomRight'
+            arrow
+          >
+            <Button
+              type='text'
+              shape='circle'
+              icon={<EllipsisOutlined style={{ fontSize: "20px" }} />}
+            />
+          </Dropdown>
         </Flex>
 
-        <Dropdown menu={{ items }} placement='bottomRight' arrow>
-          <Button
-            type='text'
-            shape='circle'
-            icon={<EllipsisOutlined style={{ fontSize: "20px" }} />}
+        <Paragraph style={{ marginTop: 16 }}>{post.content}</Paragraph>
+
+        <MediaGrid images={post.images} videos={post.videos} />
+
+        <Flex justify='space-between' style={{ marginTop: 16 }}>
+          <Flex align='center' gap={4}>
+            <LikeFilled style={{ color: "#1890ff" }} />
+            <Text type='secondary'>{likeCount}</Text>
+          </Flex>
+          <Text type='secondary'>
+            {post.comments > 0 && `${post.comments} comments`}
+            {post.comments > 0 && post.shares > 0 && " · "}
+            {post.shares > 0 && `${post.shares} shares`}
+          </Text>
+        </Flex>
+
+        <Divider style={{ margin: "8px 0" }} />
+
+        <Flex>
+          <ActionButton
+            icon={isLiked ? <LikeFilled /> : <LikeOutlined />}
+            text='Like'
+            onClick={handleLikeClick}
+            active={isLiked}
           />
-        </Dropdown>
-      </Flex>
-
-      {/* Konten Postingan */}
-      <Paragraph style={{ marginTop: 16 }}>{post.content}</Paragraph>
-
-      {/* Videos dan photos */}
-      <MediaGrid images={post.images} videos={post.videos} />
-
-      {/* Info Jumlah Like, Comment, Share */}
-      <Flex justify='space-between' style={{ marginTop: 16 }}>
-        <Flex align='center' gap={4}>
-          <LikeFilled style={{ color: "#1890ff" }} />
-          <Text type='secondary'>{likeCount}</Text>
+          <ActionButton
+            icon={<MessageOutlined />}
+            text='Comment'
+            onClick={handleCommentClick}
+          />
+          <ActionButton icon={<ShareAltOutlined />} text='Share' />
         </Flex>
-        <Text type='secondary'>
-          {/* Tampilkan comments HANYA jika lebih dari 0 */}
-          {post.comments > 0 && `${post.comments} comments`}
 
-          {/* Tampilkan pemisah "·" HANYA jika KEDUANYA lebih dari 0 */}
-          {post.comments > 0 && post.shares > 0 && " · "}
-
-          {/* Tampilkan shares HANYA jika lebih dari 0 */}
-          {post.shares > 0 && `${post.shares} shares`}
-        </Text>
-      </Flex>
-
-      <Divider style={{ margin: "8px 0" }} />
-
-      {/* Tombol Aksi: Like, Comment, Share */}
-      <Flex>
-        <ActionButton
-          icon={isLiked ? <LikeFilled /> : <LikeOutlined />}
-          text='Like'
-          onClick={handleLikeClick}
-          active={isLiked}
+        {showComments && (
+          <CommentSection postId={post.id} comments={post.commentsData} />
+        )}
+      </Card>
+      {isEditModalOpen && (
+        <AddPost
+          postToEdit={post}
+          isModalOpen={isEditModalOpen}
+          handleCancel={() => setIsEditModalOpen(false)}
         />
-        <ActionButton
-          icon={<MessageOutlined />}
-          text='Comment'
-          onClick={handleCommentClick}
-        />
-        <ActionButton icon={<ShareAltOutlined />} text='Share' />
-      </Flex>
-
-      {showComments && <CommentSection comments={post.commentsData} />}
-    </Card>
+      )}
+    </>
   );
 };
 

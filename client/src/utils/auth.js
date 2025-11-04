@@ -2,19 +2,12 @@ export const isAuthenticated = () => {
   return localStorage.getItem("isSignin") === "true";
 };
 
-export const setAuthenticated = () => {
+export const setSignIn = () => {
   localStorage.setItem("isSignin", "true");
 };
 
-export const clearAuthentication = () => {
+export const setSignOut = () => {
   localStorage.removeItem("isSignin");
-};
-
-export const checkAuthAndRedirect = (navigate, user) => {
-  const isSigninFromStorage = isAuthenticated();
-  if (!isSigninFromStorage) {
-    navigate("/signin");
-    return false;
-  }
-  return true;
+  // This should also clear the cookie from the browser
+  document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 };

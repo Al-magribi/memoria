@@ -1,41 +1,75 @@
 import React, { useState } from "react";
-import { Card, List, Typography, message } from "antd"; // 1. Impor 'message'
+import { Card, List, Typography, message, Skeleton, Select, Space, Button } from "antd";
 import {
   HomeOutlined,
   GlobalOutlined,
   CalendarOutlined,
   TagOutlined,
   EditOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
-import { User } from "../../Dummies"; // Sesuaikan path jika perlu
+import { useParams } from "react-router-dom";
+import {
+  useGetProfileQuery,
+  useUpdateDetailsMutation,
+} from "../../service/user/ApiUser";
 
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
+
+const relationshipStatusOptions = [
+  "Single",
+  "In a relationship",
+  "Engaged",
+  "Married",
+  "It's complicated",
+  "In an open relationship",
+  "Widowed",
+  "Separated",
+  "Divorced",
+];
 
 const About = () => {
-  const [bio, setBio] = useState(User.bio);
-  const [worksAt, setWorksAt] = useState(User.details.worksAt);
-  const [livesIn, setLivesIn] = useState(User.details.livesIn);
-  const [from, setFrom] = useState(User.details.from);
+  const { username } = useParams();
+  const { data: user, isLoading } = useGetProfileQuery(username);
+  const [updateDetails, { isLoading: isUpdating }] = useUpdateDetailsMutation();
+
+  const [isEditingRelationship, setIsEditingRelationship] = useState(false);
+  const [selectedRelationship, setSelectedRelationship] = useState("");
+
+  const handleUpdate = async (field, value) => {
+    try {
+      await updateDetails({ [field]: value }).unwrap();
+      message.success(`${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`);
+    } catch (error) {
+      message.error(`Failed to update ${field}`);
+    }
+  };
+
+  const handleRelationshipSave = async () => {
+    await handleUpdate("relationshipStatus", selectedRelationship);
+    setIsEditingRelationship(false);
+  };
 
   const editIcon = <EditOutlined style={{ marginLeft: 8 }} />;
+
+  if (isLoading) {
+    return <Skeleton active />;
+  }
 
   return (
     <Card>
       <Title level={4}>About</Title>
 
       <Paragraph
-        editable={{
+        editable={user?.isOwner ? {
           icon: editIcon,
           tooltip: "Edit Bio",
-          // 2. Ubah onChange untuk menyertakan message
-          onChange: (newValue) => {
-            setBio(newValue);
-            message.success("Bio berhasil diperbarui");
-          },
-        }}
-        style={{ marginBottom: 24, fontStyle: bio ? "normal" : "italic" }}
+          onChange: (newValue) => handleUpdate("bio", newValue),
+        } : false}
+        style={{ marginBottom: 24, fontStyle: user?.bio ? "normal" : "italic" }}
       >
-        {bio || "Click to add bio"}
+        {user?.bio || (user?.isOwner ? "Click to add bio" : "No bio yet")}
       </Paragraph>
 
       <Title level={5}>Details</Title>
@@ -45,17 +79,13 @@ const About = () => {
             avatar={<TagOutlined style={{ fontSize: 20 }} />}
             description={
               <Text
-                editable={{
+                editable={user?.isOwner ? {
                   icon: editIcon,
                   tooltip: "Edit Work",
-                  // 2. Ubah onChange untuk menyertakan message
-                  onChange: (newValue) => {
-                    setWorksAt(newValue);
-                    message.success("Pekerjaan berhasil diperbarui");
-                  },
-                }}
+                  onChange: (newValue) => handleUpdate("worksAt", newValue),
+                }: false}
               >
-                {worksAt ? `Works as ${worksAt}` : "Add work"}
+                {user?.details?.worksAt ? `Works as ${user.details.worksAt}` : (user?.isOwner ? "Add work" : "Not specified")}
               </Text>
             }
           />
@@ -65,17 +95,13 @@ const About = () => {
             avatar={<HomeOutlined style={{ fontSize: 20 }} />}
             description={
               <Text
-                editable={{
+                editable={user?.isOwner ? {
                   icon: editIcon,
                   tooltip: "Edit Location",
-                  // 2. Ubah onChange untuk menyertakan message
-                  onChange: (newValue) => {
-                    setLivesIn(newValue);
-                    message.success("Lokasi berhasil diperbarui");
-                  },
-                }}
+                  onChange: (newValue) => handleUpdate("livesIn", newValue),
+                } : false}
               >
-                {livesIn ? `Lives in ${livesIn}` : "Add location"}
+                {user?.details?.livesIn ? `Lives in ${user.details.livesIn}` : (user?.isOwner ? "Add location" : "Not specified")}
               </Text>
             }
           />
@@ -85,25 +111,51 @@ const About = () => {
             avatar={<GlobalOutlined style={{ fontSize: 20 }} />}
             description={
               <Text
-                editable={{
+                editable={user?.isOwner ? {
                   icon: editIcon,
                   tooltip: "Edit Hometown",
-                  // 2. Ubah onChange untuk menyertakan message
-                  onChange: (newValue) => {
-                    setFrom(newValue);
-                    message.success("Asal berhasil diperbarui");
-                  },
-                }}
+                  onChange: (newValue) => handleUpdate("from", newValue),
+                } : false}
               >
-                {from ? `From ${from}` : "Add hometown"}
+                {user?.details?.from ? `From ${user.details.from}` : (user?.isOwner ? "Add hometown" : "Not specified")}
               </Text>
             }
           />
         </List.Item>
         <List.Item>
           <List.Item.Meta
+            avatar={<HeartOutlined style={{ fontSize: 20 }} />}
+            description={
+              isEditingRelationship && user?.isOwner ? (
+                <Space>
+                  <Select
+                    defaultValue={user?.details?.relationshipStatus || "Single"}
+                    onChange={(value) => setSelectedRelationship(value)}
+                    style={{ width: 200 }}
+                  >
+                    {relationshipStatusOptions.map(option => (
+                      <Option key={option} value={option}>{option}</Option>
+                    ))}
+                  </Select>
+                  <Button type="primary" onClick={handleRelationshipSave} loading={isUpdating}>Save</Button>
+                  <Button onClick={() => setIsEditingRelationship(false)}>Cancel</Button>
+                </Space>
+              ) : (
+                <Text>
+                  {user?.details?.relationshipStatus || (user?.isOwner ? "Add relationship status" : "Not specified")}
+                  {user?.isOwner && <EditOutlined style={{ marginLeft: 8, cursor: 'pointer' }} onClick={() => {
+                    setSelectedRelationship(user?.details?.relationshipStatus || 'Single');
+                    setIsEditingRelationship(true)
+                    }} />}
+                </Text>
+              )
+            }
+          />
+        </List.Item>
+        <List.Item>
+          <List.Item.Meta
             avatar={<CalendarOutlined style={{ fontSize: 20 }} />}
-            description={<Text>Joined {User.details.joined}</Text>}
+            description={<Text>Joined {new Date(user?.details?.joined).toLocaleDateString()}</Text>}
           />
         </List.Item>
       </List>

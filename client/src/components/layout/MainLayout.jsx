@@ -1,4 +1,4 @@
-import { Layout, Grid, Row, Col, Space, Typography } from "antd";
+import { Layout, Grid, Row, Col, Space, Typography, Avatar } from "antd";
 import {
   UserOutlined,
   YoutubeOutlined,
@@ -10,7 +10,7 @@ import Navbar from "../Navbar/Navbar";
 import Left from "../left/Left";
 import ChatManager from "../right/ChatManager";
 import { useNavigate } from "react-router-dom";
-import { User } from "../../Dummies";
+import { useSelector } from "react-redux";
 
 const { Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
@@ -18,6 +18,9 @@ const { useBreakpoint } = Grid;
 // Terima 'activeTab' dan 'onTabChange' dari props
 const MainLayout = ({ children, activeTab, onTabChange }) => {
   const navigate = useNavigate();
+
+  const { user } = useSelector((state) => state.user);
+
   // State dan handler lokal telah dihapus dari file ini
   const screens = useBreakpoint();
 
@@ -51,25 +54,25 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
     <Layout>
       <Header style={headerStyle}>
         {/* Gunakan props yang diterima untuk Navbar */}
-        <Navbar activeTab={activeTab} onChange={onTabChange} />
+        <Navbar activeTab={activeTab} onChange={onTabChange} user={user} />
       </Header>
 
       <Layout style={{ paddingTop: 56 }}>
         {/* SIDER KIRI */}
         {screens.lg && (
-          <Sider width={300} style={columnStyle} className="hide-scrollbar">
-            <Left />
+          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
+            <Left user={user} />
           </Sider>
         )}
 
         {/* KONTEN UTAMA */}
-        <Content style={contentStyle} className="hide-scrollbar">
+        <Content style={contentStyle} className='hide-scrollbar'>
           {children}
         </Content>
 
         {/* SIDER KANAN */}
         {screens.md && (
-          <Sider width={300} style={columnStyle} className="hide-scrollbar">
+          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
             <ChatManager />
           </Sider>
         )}
@@ -90,8 +93,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
         >
           <Col xs={6}>
             <Space
-              direction="vertical"
-              align="center"
+              direction='vertical'
+              align='center'
               style={{ width: "100%", cursor: "pointer" }}
               onClick={() => onTabChange("1")} // Gunakan 'onTabChange' dari props
             >
@@ -102,8 +105,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction="vertical"
-              align="center"
+              direction='vertical'
+              align='center'
               style={{ width: "100%" }}
               onClick={() => onTabChange("2")} // Gunakan 'onTabChange' dari props
             >
@@ -114,8 +117,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction="vertical"
-              align="center"
+              direction='vertical'
+              align='center'
               style={{ width: "100%" }}
               onClick={() => navigate("/chat")}
             >
@@ -126,12 +129,12 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction="vertical"
-              align="center"
+              direction='vertical'
+              align='center'
               style={{ width: "100%" }}
-              onClick={() => navigate(`/${User.username}`)}
+              onClick={() => navigate(`/${user?.username}`)}
             >
-              <UserOutlined style={{ fontSize: 20 }} />
+              <Avatar src={user?.avatar} icon={<UserOutlined />} />
               <Typography.Text>You</Typography.Text>
             </Space>
           </Col>
