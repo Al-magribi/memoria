@@ -1,4 +1,4 @@
-import { Menu, Avatar } from "antd";
+import { Menu, Avatar, Spin } from "antd";
 import {
   UsergroupAddOutlined,
   PlaySquareOutlined,
@@ -7,7 +7,7 @@ import {
 } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const Left = ({ user }) => {
+const Left = ({ user, isLoading }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,31 +17,33 @@ const Left = ({ user }) => {
   };
 
   return (
-    <Menu
-      mode='inline'
-      selectedKeys={[location.pathname]}
-      onClick={handleMenuClick}
-      style={{ backgroundColor: "#f0f2f5", border: "none" }}
-      items={[
-        {
-          // 7. Gunakan path sebagai 'key' agar semantik
-          key: `/${user?.username}`,
-          icon: <Avatar icon={<UserOutlined />} src={user?.avatar} />,
-          label: `@${user?.username}`,
-          // Hapus onClick individual
-        },
-        {
-          key: "/friends", // 7. Gunakan path sebagai 'key'
-          icon: <UsergroupAddOutlined />,
-          label: "Friends",
-        },
-        {
-          key: "/settings", // 7. Gunakan path sebagai 'key'
-          icon: <SettingOutlined />,
-          label: "Settings",
-        },
-      ]}
-    />
+    <Spin tip="Loading Profile..." spinning={isLoading}>
+      <Menu
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        onClick={handleMenuClick}
+        style={{ backgroundColor: "#f0f2f5", border: "none" }}
+        items={[
+          {
+            // 7. Gunakan path sebagai 'key' agar semantik
+            key: `/${user?.username}`,
+            icon: <Avatar icon={<UserOutlined />} src={user?.avatar} />,
+            label: `@${user?.username}`,
+            // Hapus onClick individual
+          },
+          {
+            key: "/friends", // 7. Gunakan path sebagai 'key'
+            icon: <UsergroupAddOutlined />,
+            label: "Friends",
+          },
+          {
+            key: "/settings", // 7. Gunakan path sebagai 'key'
+            icon: <SettingOutlined />,
+            label: "Settings",
+          },
+        ]}
+      />
+    </Spin>
   );
 };
 

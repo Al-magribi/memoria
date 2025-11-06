@@ -19,7 +19,7 @@ const { useBreakpoint } = Grid;
 const MainLayout = ({ children, activeTab, onTabChange }) => {
   const navigate = useNavigate();
 
-  const { user } = useSelector((state) => state.user);
+  const { user, isLoading } = useSelector((state) => state.user);
 
   // State dan handler lokal telah dihapus dari file ini
   const screens = useBreakpoint();
@@ -60,19 +60,19 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
       <Layout style={{ paddingTop: 56 }}>
         {/* SIDER KIRI */}
         {screens.lg && (
-          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
-            <Left user={user} />
+          <Sider width={300} style={columnStyle} className="hide-scrollbar">
+            <Left user={user} isLoading={isLoading} />
           </Sider>
         )}
 
         {/* KONTEN UTAMA */}
-        <Content style={contentStyle} className='hide-scrollbar'>
+        <Content style={contentStyle} className="hide-scrollbar">
           {children}
         </Content>
 
         {/* SIDER KANAN */}
         {screens.md && (
-          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
+          <Sider width={300} style={columnStyle} className="hide-scrollbar">
             <ChatManager />
           </Sider>
         )}
@@ -93,8 +93,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
         >
           <Col xs={6}>
             <Space
-              direction='vertical'
-              align='center'
+              direction="vertical"
+              align="center"
               style={{ width: "100%", cursor: "pointer" }}
               onClick={() => onTabChange("1")} // Gunakan 'onTabChange' dari props
             >
@@ -105,8 +105,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction='vertical'
-              align='center'
+              direction="vertical"
+              align="center"
               style={{ width: "100%" }}
               onClick={() => onTabChange("2")} // Gunakan 'onTabChange' dari props
             >
@@ -117,8 +117,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction='vertical'
-              align='center'
+              direction="vertical"
+              align="center"
               style={{ width: "100%" }}
               onClick={() => navigate("/chat")}
             >
@@ -129,8 +129,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
           <Col xs={6}>
             <Space
-              direction='vertical'
-              align='center'
+              direction="vertical"
+              align="center"
               style={{ width: "100%" }}
               onClick={() => navigate(`/${user?.username}`)}
             >

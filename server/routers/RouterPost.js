@@ -7,6 +7,7 @@ import fs from "fs";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 import User from "../schema/UserSchema.js";
+import { compressVideo } from "../utils/VideoCompress.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,11 +53,14 @@ router.post(
 
             media.push({ url: `/assets/posts/${filename}`, type: "image" });
           } else if (file.mimetype.startsWith("video")) {
-            const extension = path.extname(file.originalname) || ".mp4";
-            filename = `post-${uniqueSuffix}${extension}`;
+            // SELALU JADIKAN .mp4 KARENA DIKOMPRES
+            filename = `post-${uniqueSuffix}.mp4`;
             fileUrl = path.join(uploadDir, filename);
 
-            fs.writeFileSync(fileUrl, file.buffer);
+            // --- PERUBAHAN DI SINI ---
+            // Ganti fs.writeFileSync dengan fungsi kompresi kita
+            await compressVideo(file.buffer, fileUrl);
+            // ------------------------
 
             media.push({ url: `/assets/posts/${filename}`, type: "video" });
           }
@@ -82,6 +86,90 @@ router.post(
     }
   }
 );
+
+router.put("/:postId", verify(), upload.array("files"), async (req, res) => {
+  try {
+    const { content, isPrivate, location, existingMedia } = req.body;
+    const userId = req.user.id;
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "User not authorized to edit this post" });
+    }
+
+    // Handle media updates
+    const newMedia = [];
+    const existingMediaUrls = existingMedia ? JSON.parse(existingMedia) : [];
+
+    // Keep media that are still present
+    const keptMedia = post.media.filter((m) =>
+      existingMediaUrls.includes(m.url)
+    );
+    newMedia.push(...keptMedia);
+
+    // Delete media that were removed
+    const removedMedia = post.media.filter(
+      (m) => !existingMediaUrls.includes(m.url)
+    );
+    for (const media of removedMedia) {
+      const filePath = path.join(uploadDir, path.basename(media.url));
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Add new files
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        let filename;
+        let fileUrl;
+
+        if (file.mimetype.startsWith("image")) {
+          filename = `post-${uniqueSuffix}.webp`;
+          fileUrl = path.join(uploadDir, filename);
+          await sharp(file.buffer)
+            .resize({ width: 1080, withoutEnlargement: true })
+            .toFormat("webp")
+            .toFile(fileUrl);
+          newMedia.push({ url: `/assets/posts/${filename}`, type: "image" });
+        } else if (file.mimetype.startsWith("video")) {
+          // SELALU JADIKAN .mp4 KARENA DIKOMPRES
+          filename = `post-${uniqueSuffix}.mp4`;
+          fileUrl = path.join(uploadDir, filename);
+
+          // --- PERUBAHAN DI SINI ---
+          // Ganti fs.writeFileSync dengan fungsi kompresi kita
+          await compressVideo(file.buffer, fileUrl);
+          // ------------------------
+          newMedia.push({ url: `/assets/posts/${filename}`, type: "video" });
+        }
+      }
+    }
+
+    post.content = content;
+    post.privacy = isPrivate === "true" ? "private" : "public";
+    post.location = location ? JSON.parse(location) : post.location;
+    post.media = newMedia;
+    post.edited = true;
+    post.updatedAt = Date.now();
+
+    await post.save();
+
+    res.status(200).json({ message: "Post updated successfully", post });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 router.delete("/:postId", verify(), async (req, res) => {
   try {
@@ -208,86 +296,6 @@ router.get("/feed", verify(), async (req, res) => {
     }));
 
     res.status(200).json(formattedPosts);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-router.put("/:postId", verify(), upload.array("files"), async (req, res) => {
-  try {
-    const { content, isPrivate, location, existingMedia } = req.body;
-    const userId = req.user.id;
-    const { postId } = req.params;
-
-    const post = await Post.findById(postId);
-
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    if (post.user.id !== userId) {
-      return res
-        .status(403)
-        .json({ message: "User not authorized to edit this post" });
-    }
-
-    // Handle media updates
-    const newMedia = [];
-    const existingMediaUrls = existingMedia ? JSON.parse(existingMedia) : [];
-
-    // Keep media that are still present
-    const keptMedia = post.media.filter((m) =>
-      existingMediaUrls.includes(m.url)
-    );
-    newMedia.push(...keptMedia);
-
-    // Delete media that were removed
-    const removedMedia = post.media.filter(
-      (m) => !existingMediaUrls.includes(m.url)
-    );
-    for (const media of removedMedia) {
-      const filePath = path.join(uploadDir, path.basename(media.url));
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    }
-
-    // Add new files
-    if (req.files && Array.isArray(req.files)) {
-      for (const file of req.files) {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        let filename;
-        let fileUrl;
-
-        if (file.mimetype.startsWith("image")) {
-          filename = `post-${uniqueSuffix}.webp`;
-          fileUrl = path.join(uploadDir, filename);
-          await sharp(file.buffer)
-            .resize({ width: 1080, withoutEnlargement: true })
-            .toFormat("webp")
-            .toFile(fileUrl);
-          newMedia.push({ url: `/assets/posts/${filename}`, type: "image" });
-        } else if (file.mimetype.startsWith("video")) {
-          const extension = path.extname(file.originalname) || ".mp4";
-          filename = `post-${uniqueSuffix}${extension}`;
-          fileUrl = path.join(uploadDir, filename);
-          fs.writeFileSync(fileUrl, file.buffer);
-          newMedia.push({ url: `/assets/posts/${filename}`, type: "video" });
-        }
-      }
-    }
-
-    post.content = content;
-    post.privacy = isPrivate === "true" ? "private" : "public";
-    post.location = location ? JSON.parse(location) : post.location;
-    post.media = newMedia;
-    post.edited = true;
-    post.updatedAt = Date.now();
-
-    await post.save();
-
-    res.status(200).json({ message: "Post updated successfully", post });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
@@ -512,34 +520,34 @@ router.get("/user/:username", verify(), async (req, res) => {
       .sort({ createdAt: -1 });
 
     const formattedPosts = posts.map((post) => ({
-        id: post._id,
-        user: post.user,
-        username: post.user.username,
-        avatar: post.user.avatar,
-        timestamp: post.createdAt,
-        content: post.content,
-        images: post.media.filter((m) => m.type === "image"),
-        videos: post.media.filter((m) => m.type === "video"),
-        likes: post.likesCount,
-        comments: post.commentsCount,
-        shares: post.sharesCount,
-        location: post.location,
-        commentsData: post.comments.map((comment) => ({
-            id: comment._id,
-            user: comment.user.username,
-            avatar: comment.user.avatar,
-            text: comment.text,
-            likes: comment.likes.length,
-            timestamp: comment.createdAt,
-            replies: comment.replies.map((reply) => ({
-            id: reply._id,
-            user: reply.user.username,
-            avatar: reply.user.avatar,
-            text: reply.text,
-            likes: reply.likes.length,
-            timestamp: reply.createdAt,
-            })),
+      id: post._id,
+      user: post.user,
+      username: post.user.username,
+      avatar: post.user.avatar,
+      timestamp: post.createdAt,
+      content: post.content,
+      images: post.media.filter((m) => m.type === "image"),
+      videos: post.media.filter((m) => m.type === "video"),
+      likes: post.likesCount,
+      comments: post.commentsCount,
+      shares: post.sharesCount,
+      location: post.location,
+      commentsData: post.comments.map((comment) => ({
+        id: comment._id,
+        user: comment.user.username,
+        avatar: comment.user.avatar,
+        text: comment.text,
+        likes: comment.likes.length,
+        timestamp: comment.createdAt,
+        replies: comment.replies.map((reply) => ({
+          id: reply._id,
+          user: reply.user.username,
+          avatar: reply.user.avatar,
+          text: reply.text,
+          likes: reply.likes.length,
+          timestamp: reply.createdAt,
         })),
+      })),
     }));
 
     res.status(200).json(formattedPosts);
