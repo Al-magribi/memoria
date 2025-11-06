@@ -1,7 +1,6 @@
 export const User = {
   firstName: "Alma",
   lastName: "Dev",
-  fullName: "Alma Dev",
   username: "almadev",
   email: "alma.dev@memoria.com",
   avatar:
@@ -89,18 +88,7 @@ export const PostLists = [
     comments: 2,
   },
   {
-    username: "almadev", // Cocokkan dengan User.name
-    avatar: User.avatar, // Gunakan avatar User
-    timestamp: "5 minutes ago",
-    content:
-      "Just setting up my new Memoria profile! Excited to share my journey here.",
-    images: [],
-    videos: [{ url: "/video_2.mp4" }, { url: "/video_4.mp4" }],
-    likes: 15,
-    comments: 2,
-  },
-  {
-    username: "Mark Zuckerberg",
+    user: "Mark Zuckerberg",
     avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
     timestamp: "2 hours ago",
     content:
@@ -116,7 +104,10 @@ export const PostLists = [
         url: "https://images.pexels.com/photos/2166711/pexels-photo-2166711.jpeg",
       },
     ],
-    videos: [{ url: "/video_1.mp4" }, { url: "/video_2.mp4" }],
+    videos: [
+      { url: "https://www.pexels.com/download/video/1580455/" },
+      { url: "https://www.pexels.com/download/video/3115738/" },
+    ],
     likes: 1250,
     comments: 320,
     shares: 150,
@@ -153,7 +144,7 @@ export const PostLists = [
     ],
   },
   {
-    username: "Jane Doe",
+    user: "Jane Doe",
     avatar: "https://xsgames.co/randomusers/avatar.php?g=female",
     timestamp: "5 hours ago",
     content:

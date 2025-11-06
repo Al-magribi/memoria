@@ -6,6 +6,7 @@ import User from "../schema/UserSchema.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { compressVideo } from "../utils/VideoCompress.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,11 +40,11 @@ router.post(
 
       const video = req.file;
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const extension = path.extname(video.originalname) || ".mp4";
+      const extension = ".mp4"; 
       const filename = `reel-${uniqueSuffix}${extension}`;
       const fileUrl = path.join(uploadDir, filename);
 
-      fs.writeFileSync(fileUrl, video.buffer);
+      await compressVideo(video.buffer, fileUrl);
 
       const newReel = new Reel({
         user: userId,
@@ -129,11 +130,11 @@ router.put(
         // Save new video
         const video = req.file;
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const extension = path.extname(video.originalname) || ".mp4";
+        const extension = ".mp4";
         const filename = `reel-${uniqueSuffix}${extension}`;
         const fileUrl = path.join(uploadDir, filename);
 
-        fs.writeFileSync(fileUrl, video.buffer);
+        await compressVideo(video.buffer, fileUrl);
         reel.video = `/assets/reels/${filename}`;
       }
 

@@ -4,10 +4,10 @@ import { verify } from "../middlewares/Verify.js";
 import Post from "../schema/PostSchema.js";
 import path from "path";
 import fs from "fs";
-import sharp from "sharp";
 import { fileURLToPath } from "url";
 import User from "../schema/UserSchema.js";
 import { compressVideo } from "../utils/VideoCompress.js";
+import { compressImage } from "../utils/ImageCompress.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,21 +46,14 @@ router.post(
             filename = `post-${uniqueSuffix}.webp`;
             fileUrl = path.join(uploadDir, filename);
 
-            await sharp(file.buffer)
-              .resize({ width: 1080, withoutEnlargement: true })
-              .toFormat("webp")
-              .toFile(fileUrl);
+            await compressImage(file.buffer, fileUrl);
 
             media.push({ url: `/assets/posts/${filename}`, type: "image" });
           } else if (file.mimetype.startsWith("video")) {
-            // SELALU JADIKAN .mp4 KARENA DIKOMPRES
             filename = `post-${uniqueSuffix}.mp4`;
             fileUrl = path.join(uploadDir, filename);
 
-            // --- PERUBAHAN DI SINI ---
-            // Ganti fs.writeFileSync dengan fungsi kompresi kita
             await compressVideo(file.buffer, fileUrl);
-            // ------------------------
 
             media.push({ url: `/assets/posts/${filename}`, type: "video" });
           }
@@ -77,9 +70,7 @@ router.post(
 
       await newPost.save();
 
-      res
-        .status(201)
-        .json({ message: "Post created successfully", post: newPost });
+      res.status(201).json({ message: "Post created successfully" });
     } catch (error) {
       console.log(error);
       res.status(500).json({ message: error.message });
@@ -136,20 +127,13 @@ router.put("/:postId", verify(), upload.array("files"), async (req, res) => {
         if (file.mimetype.startsWith("image")) {
           filename = `post-${uniqueSuffix}.webp`;
           fileUrl = path.join(uploadDir, filename);
-          await sharp(file.buffer)
-            .resize({ width: 1080, withoutEnlargement: true })
-            .toFormat("webp")
-            .toFile(fileUrl);
+          await compressImage(file.buffer, fileUrl);
           newMedia.push({ url: `/assets/posts/${filename}`, type: "image" });
         } else if (file.mimetype.startsWith("video")) {
-          // SELALU JADIKAN .mp4 KARENA DIKOMPRES
           filename = `post-${uniqueSuffix}.mp4`;
           fileUrl = path.join(uploadDir, filename);
 
-          // --- PERUBAHAN DI SINI ---
-          // Ganti fs.writeFileSync dengan fungsi kompresi kita
           await compressVideo(file.buffer, fileUrl);
-          // ------------------------
           newMedia.push({ url: `/assets/posts/${filename}`, type: "video" });
         }
       }
@@ -164,7 +148,7 @@ router.put("/:postId", verify(), upload.array("files"), async (req, res) => {
 
     await post.save();
 
-    res.status(200).json({ message: "Post updated successfully", post });
+    res.status(200).json({ message: "Post updated successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });

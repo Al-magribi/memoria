@@ -5,7 +5,7 @@ import User from "../schema/UserSchema.js";
 import { sendActivationEmail } from "../utils/EmailActivation.js";
 import { verify } from "../middlewares/Verify.js";
 import multer from "multer";
-import sharp from "sharp";
+import { compressImage } from "../utils/ImageCompress.js";
 import path from "path";
 import fs from "fs";
 import Post from "../schema/PostSchema.js";
@@ -54,11 +54,7 @@ router.post(
         const avatarFileName = `avatar-${Date.now()}.jpeg`;
         const avatarPath = path.join(uploadPath, avatarFileName);
 
-        await sharp(avatar.buffer)
-          .resize(200, 200)
-          .toFormat("jpeg")
-          .jpeg({ quality: 90 })
-          .toFile(avatarPath);
+        await compressImage(avatar.buffer, avatarPath);
 
         user.avatar = `/assets/profiles/${_id.toString()}/${avatarFileName}`;
       }
@@ -69,22 +65,14 @@ router.post(
         const coverFileName = `cover-${Date.now()}.jpeg`;
         const coverPath = path.join(uploadPath, coverFileName);
 
-        await sharp(cover.buffer)
-          .resize(851, 315)
-          .toFormat("jpeg")
-          .jpeg({ quality: 90 })
-          .toFile(coverPath);
+        await compressImage(cover.buffer, coverPath);
 
         user.coverPhoto = `/assets/profiles/${_id.toString()}/${coverFileName}`;
       }
 
       await user.save();
 
-      res.status(200).json({
-        message: "Profile images uploaded successfully",
-        avatar: user.avatar,
-        coverPhoto: user.coverPhoto,
-      });
+      res.status(200).json({ message: "Profile images uploaded successfully" });
     } catch (error) {
       console.error("Error uploading profile images:", error);
       res.status(500).json({ message: "Error uploading images" });
