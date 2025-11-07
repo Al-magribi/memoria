@@ -46,7 +46,6 @@ export const compressVideo = (buffer, outputPath) => {
     ffmpeg.on("close", (code) => {
       if (code === 0) {
         // Sukses
-        console.log(`Video compressed successfully: ${outputPath}`);
         resolve();
       } else {
         // Gagal

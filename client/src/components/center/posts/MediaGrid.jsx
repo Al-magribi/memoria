@@ -1,8 +1,7 @@
-// MediaGrid.jsx (Perbaikan Final)
-
 import { useState } from "react";
 import { Flex, Typography } from "antd";
 import MediaPreview from "./MediaPreview"; // Impor komponen modal baru kita
+import { PlayCircleOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 
@@ -52,35 +51,45 @@ const MediaGrid = ({ images = [], videos = [] }) => {
       // Ini menjadikannya thumbnail yang bisa diklik,
       // sama seperti gambar.
       return (
-        <video
-          // HAPUS: controls
-          src={media.url}
-          style={style}
-          muted // 'muted' sering diperlukan agar beberapa browser mau render frame pertama
-          preload='metadata' // Hanya load info dasar, bukan seluruh video
-          // HAPUS: onClick={(e) => e.stopPropagation()}
-        />
+        <>
+          <video
+            // HAPUS: controls
+            src={media.url}
+            style={style}
+            muted // 'muted' sering diperlukan agar beberapa browser mau render frame pertama
+            preload="metadata" // Hanya load info dasar, bukan seluruh video
+            // HAPUS: onClick={(e) => e.stopPropagation()}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              color: "white",
+              fontSize: "48px",
+              pointerEvents: "none",
+            }}
+          >
+            <PlayCircleOutlined />
+          </div>
+        </>
       );
     }
     return null;
   };
   // --- AKHIR PERBAIKAN ---
 
-  let gridClassName = "media-grid-1";
-  if (totalMedia === 2) gridClassName = "media-grid-2";
-  if (totalMedia === 3) gridClassName = "media-grid-3";
-  if (totalMedia >= 4) gridClassName = "media-grid-4";
-
   const visibleMedia = allMedia.slice(0, 4);
   const remainingCount = totalMedia - visibleMedia.length;
 
   return (
     <>
-      <Flex className={gridClassName} gap={8} style={{ marginTop: 16 }}>
+      <Flex gap={8} style={{ marginTop: 16 }}>
         {visibleMedia.map((media, index) => (
           <div
             key={index}
-            className='media-grid-item'
+            className="media-grid-item"
             style={{
               position: "relative",
               cursor: "pointer", // Kursor pointer untuk SEMUA item
@@ -98,8 +107,8 @@ const MediaGrid = ({ images = [], videos = [] }) => {
 
             {index === 3 && remainingCount > 0 && (
               <Flex
-                align='center'
-                justify='center'
+                align="center"
+                justify="center"
                 style={{
                   position: "absolute",
                   top: "2px",

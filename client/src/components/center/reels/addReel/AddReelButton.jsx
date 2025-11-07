@@ -6,32 +6,24 @@ const AddReelButton = ({ showModal }) => {
   const { user } = useSelector((state) => state.user);
 
   return (
-    <Flex
+    <Button
+      onClick={showModal}
+      shape="round"
       style={{
-        padding: "1rem",
-        borderBottom: "1px solid #dbdbdb",
-        backgroundColor: "#fff",
-        borderTopLeftRadius: "8px",
-        borderTopRightRadius: "8px",
+        flexGrow: 1,
+        textAlign: "left",
+        backgroundColor: "#f0f2f5",
+        borderColor: "#f0f2f5",
+        color: "#65676b",
+        position: "absolute",
+        bottom: 0,
+        right: 0,
       }}
+      icon={<VideoCameraAddOutlined />}
+      type="text"
     >
-      <Avatar src={user?.avatar} style={{ marginRight: "1rem" }} />
-      <Button
-        onClick={showModal}
-        shape='round'
-        style={{
-          flexGrow: 1,
-          textAlign: "left",
-          backgroundColor: "#f0f2f5",
-          borderColor: "#f0f2f5",
-          color: "#65676b",
-        }}
-        icon={<VideoCameraAddOutlined />}
-        type='text'
-      >
-        Create Reel
-      </Button>
-    </Flex>
+      Create Reel
+    </Button>
   );
 };
 

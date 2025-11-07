@@ -425,4 +425,18 @@ router.get("/my-photos", verify(), async (req, res) => {
   }
 });
 
+router.post("/logout", verify(), async (req, res) => {
+  try {
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0),
+    });
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
