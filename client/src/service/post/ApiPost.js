@@ -35,20 +35,13 @@ export const ApiPost = createApi({
       }),
       invalidatesTags: ["Posts"],
     }),
-    getPostsByUsername: builder.query({
-      query: (username) => `/user/${username}`,
+    getPostsByUserId: builder.query({
+      query: (userId) => `/user-posts/${userId}`,
       providesTags: ["Posts"],
     }),
     getFeed: builder.query({
       query: () => "/feed",
       providesTags: ["Posts"],
-    }),
-    deletePost: builder.mutation({
-      query: (id) => ({
-        url: `/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Posts"],
     }),
     likePost: builder.mutation({
       query: (postId) => ({
@@ -110,7 +103,7 @@ export const {
   useCreatePostMutation,
   useGetMyPostsQuery,
   useUpdatePostMutation,
-  useGetPostsByUsernameQuery,
+  useGetPostsByUserIdQuery,
   useGetFeedQuery,
   useDeletePostMutation,
   useLikePostMutation,

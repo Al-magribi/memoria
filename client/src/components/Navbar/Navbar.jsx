@@ -1,13 +1,22 @@
-import { Input, Avatar, Flex, Button, Grid, Tabs } from "antd";
 import {
-  BellFilled,
+  Input,
+  Avatar,
+  Flex,
+  Button,
+  Grid,
+  Tabs,
+  Space,
+} from "antd";
+import {
   MessageFilled,
   SearchOutlined,
   YoutubeOutlined,
   HomeOutlined,
   UserOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import Notif from "./Notif";
 
 const { useBreakpoint } = Grid;
 
@@ -31,26 +40,36 @@ const Navbar = ({ activeTab, onChange, user }) => {
     >
       {/* Header Bagian Kiri: Logo & Search */}
       <Flex
-        gap="middle"
-        align="center"
+        gap='middle'
+        align='center'
         style={{ width: !screens.md ? "100%" : "285px" }}
       >
         <img
-          src="logo.png"
-          alt="almadev"
+          src='/logo.png'
+          alt='almadev'
           style={{ width: "35px", borderRadius: "50%" }}
         />
-        {/* Sembunyikan input search di layar xs agar tidak terlalu penuh */}
 
         <Input
           prefix={<SearchOutlined />}
-          placeholder="Cari apapun ..."
+          placeholder='Cari apapun ...'
           style={{ borderRadius: "20px" }}
         />
+
+        {!screens.md && (
+          <Space>
+            <Button
+              shape='circle'
+              size='large'
+              icon={<UsergroupAddOutlined />}
+              onClick={() => navigate("/friends")}
+            />
+            <Notif user={user} />
+          </Space>
+        )}
       </Flex>
 
       {/* Header Bagian Tengah: Navigasi Utama */}
-      {/* Tampilkan hanya di layar 'md' ke atas, agar konsisten dengan sidebar */}
       {screens.md && (
         <Tabs
           centered
@@ -63,25 +82,25 @@ const Navbar = ({ activeTab, onChange, user }) => {
       {/* Tampilkan hanya di layar 'md' ke atas */}
       {screens.md && (
         <Flex
-          gap="middle"
-          align="center"
-          justify="center"
+          gap='middle'
+          align='center'
+          justify='center'
           style={{ width: "285px" }}
         >
           <Button
-            shape="circle"
-            size="large"
+            shape='circle'
+            size='large'
             icon={<MessageFilled />}
             onClick={() => navigate("/chat")}
           />
 
-          <Button shape="circle" size="large" icon={<BellFilled />} />
+          <Notif user={user} />
 
           <Avatar
-            size="large"
+            size='large'
             icon={<UserOutlined />}
             src={user?.avatar}
-            onClick={() => navigate(`/${user?.username}`)}
+            onClick={() => navigate(`/${user?.fullName}`)}
             style={{ cursor: "pointer" }}
           />
         </Flex>

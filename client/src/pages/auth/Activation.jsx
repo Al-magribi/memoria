@@ -1,16 +1,16 @@
 import {
-  Button,
   Card,
   Flex,
-  Form,
   Grid,
-  Input,
   Layout,
   message,
-  Select,
+  Spin,
+  Typography,
+  Result, // <-- Impor komponen Result
+  Button, // <-- Impor komponen Button
 } from "antd";
 import { useActivateMutation } from "../../service/user/ApiUser";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react"; // <-- Impor useCallback
 import { useNavigate, useParams } from "react-router-dom";
 
 const { Content } = Layout;
@@ -21,27 +21,97 @@ const Activation = () => {
   const screens = useBreakpoint();
   const { code } = useParams();
 
-  const [form] = Form.useForm();
   const [activate, { isLoading, data, error, isSuccess }] =
     useActivateMutation();
 
-  const onFinish = (values) => {
-    values.activationCode = code;
-    activate(values);
-  };
+  // Gunakan useCallback agar fungsi onFinish stabil
+  // dan bisa digunakan di dependency array useEffect
+  const onFinish = useCallback(() => {
+    if (code) {
+      activate({ activationCode: code });
+    }
+  }, [activate, code]);
 
+  // Efek untuk menjalankan aktivasi saat komponen dimuat
   useEffect(() => {
-    if (isSuccess) {
+    onFinish();
+  }, [onFinish]);
+
+  // Efek untuk menangani hasil (sukses atau eror)
+  useEffect(() => {
+    if (isSuccess && data) {
+      // Tampilkan pesan sukses
       message.success(data.message);
-      form.resetFields();
-      navigate("/signin");
+
+      // Arahkan pengguna setelah 2 detik agar mereka sempat membaca pesan
+      const timer = setTimeout(() => {
+        navigate("/signin");
+      }, 2000);
+
+      // Bersihkan timer jika komponen di-unmount
+      return () => clearTimeout(timer);
     }
 
-    if (error) {
+    if (error && error.data) {
+      // Tampilkan pesan eror
       message.error(error.data.message);
-      navigate("/signin");
     }
-  }, [data, error, isSuccess]);
+  }, [data, error, isSuccess, navigate]);
+
+  // Fungsi untuk me-render konten Card berdasarkan status
+  const renderContent = () => {
+    // 2. Status Error
+    if (error) {
+      return (
+        <Result
+          status='error'
+          title='Activation Failed!'
+          subTitle={
+            error.data?.message ||
+            "Something went wrong. Please try again later."
+          }
+          extra={[
+            <Button
+              type='primary'
+              key='home'
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
+            </Button>,
+            <Button key='retry' onClick={onFinish}>
+              Try Again
+            </Button>,
+          ]}
+        />
+      );
+    }
+
+    // 3. Status Sukses
+    if (isSuccess) {
+      return (
+        <Result
+          status='success'
+          title='Activation Success!'
+          subTitle={data?.message}
+        />
+      );
+    }
+
+    // Status default (sebelum loading dimulai)
+    return (
+      <Flex
+        direction='column'
+        align='center'
+        justify='center'
+        style={{ minHeight: 150 }}
+      >
+        <Spin size='large' />
+        <Typography.Text type='secondary' style={{ marginTop: 24 }}>
+          Preparing...
+        </Typography.Text>
+      </Flex>
+    );
+  };
 
   return (
     <Layout style={{ minHeight: "100vh", backgroundColor: "#f0f2f5" }}>
@@ -55,52 +125,16 @@ const Activation = () => {
           }}
         >
           <Card
-            title='Activation Account'
+            title='Account Activation'
             style={{
               maxWidth: 400,
               width: "100%",
               boxShadow: screens.xs ? "none" : "0 4px 12px rgba(0, 0, 0, 0.1)",
             }}
+            loading={isLoading}
           >
-            <Form layout='vertical' onFinish={onFinish}>
-              <Form.Item
-                name='username'
-                label='Username'
-                rules={[
-                  { required: true, message: "Please input your username!" },
-                ]}
-              >
-                <Input placeholder='username' />
-              </Form.Item>
-
-              <Form.Item
-                name='gender'
-                label='Select Gender'
-                rules={[
-                  { required: true, message: "Please select your gender!" },
-                ]}
-              >
-                <Select
-                  options={[
-                    { label: "Male", value: "Male" },
-                    { label: "Female", value: "Female" },
-                  ]}
-                  placeholder='Select Gender'
-                />
-              </Form.Item>
-
-              <Form.Item style={{ marginTop: 16 }}>
-                <Button
-                  type='primary'
-                  htmlType='submit'
-                  block
-                  size='large'
-                  loading={isLoading}
-                >
-                  Activate
-                </Button>
-              </Form.Item>
-            </Form>
+            {/* Render konten secara dinamis */}
+            {renderContent()}
           </Card>
         </Flex>
       </Content>

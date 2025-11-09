@@ -5,6 +5,7 @@ import {
   Col,
   Divider,
   Flex,
+  Grid,
   Input,
   Row,
   message,
@@ -30,14 +31,14 @@ const AddPostButton = ({ showModal }) => {
           shape='circle'
         />
         <Input
-          placeholder={`What's on your mind, ${user?.username}?`}
+          placeholder={`What's on your mind, ${user?.fullName}?`}
           onClick={showModal}
           readOnly
           style={{
             cursor: "pointer",
             backgroundColor: "#f0f2f5",
             borderRadius: "20px",
-            width: "90%",
+            width: "93%",
           }}
         />
       </Flex>

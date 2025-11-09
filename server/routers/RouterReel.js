@@ -40,7 +40,7 @@ router.post(
 
       const video = req.file;
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const extension = ".mp4"; 
+      const extension = ".mp4";
       const filename = `reel-${uniqueSuffix}${extension}`;
       const fileUrl = path.join(uploadDir, filename);
 
@@ -75,7 +75,7 @@ router.get("/get-reels", verify(), async (req, res) => {
     const userIds = [req.user.id, ...friendIds];
 
     const reels = await Reel.find({ user: { $in: userIds } })
-      .populate("user", "username avatar")
+      .populate("user")
       .sort({ createdAt: -1 });
 
     res.status(200).json(reels);
@@ -88,10 +88,7 @@ router.get("/get-reels", verify(), async (req, res) => {
 // Get a single reel by ID
 router.get("/:reelId", async (req, res) => {
   try {
-    const reel = await Reel.findById(req.params.reelId).populate(
-      "user",
-      "username avatar"
-    );
+    const reel = await Reel.findById(req.params.reelId).populate("user");
     if (!reel) {
       return res.status(404).json({ message: "Reel not found" });
     }

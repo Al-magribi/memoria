@@ -16,8 +16,6 @@ import {
 const { Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 
-
-
 const videoStyle = {
   width: "100%",
   height: "100%",
@@ -64,6 +62,8 @@ const Reels = () => {
   const { data: reels, isLoading } = useGetReelsQuery();
   const [createReel, { isLoading: isSubmitting }] = useCreateReelMutation();
 
+  console.log(reels);
+
   const handleOpen = (reel) => {
     setReel(reel);
     setOpen(true);
@@ -101,10 +101,10 @@ const Reels = () => {
 
   return (
     <Flex
-      direction="row"
-      gap="large"
-      align="center"
-      justify="center"
+      direction='row'
+      gap='large'
+      align='center'
+      justify='center'
       style={{
         width: "100%",
         height: "calc(100vh - 60px)",
@@ -131,18 +131,18 @@ const Reels = () => {
       {/* Container Flex vertikal untuk menampung list reel */}
       <Flex
         vertical
-        gap="large"
-        align="center"
+        gap='large'
+        align='center'
         style={{
           height: "100%", // Mengisi tinggi parent
           overflowY: "auto", // Membuat list reel bisa di-scroll
           padding: "8px", // Padding agar scrollbar tidak menempel
           position: "relative",
         }}
-        className="hide-scrollbar"
+        className='hide-scrollbar'
       >
         {isLoading ? (
-          <Spin size="large" />
+          <Spin size='large' />
         ) : reels && reels.length > 0 ? (
           reels.map((reel) => (
             // Setiap div ini sekarang adalah "snap point"
@@ -155,21 +155,21 @@ const Reels = () => {
                 playsInline
                 style={videoStyle}
               />
-              <Flex vertical justify="flex-end" style={overlayStyle}>
+              <Flex vertical justify='flex-end' style={overlayStyle}>
                 <Flex
-                  align="flex-end"
-                  justify="space-between"
+                  align='flex-end'
+                  justify='space-between'
                   style={bottomOverlayStyle}
                 >
                   <Flex
                     vertical
-                    gap="small"
+                    gap='small'
                     style={{ flex: 1, marginRight: "16px" }}
                   >
-                    <Flex align="center" gap={8}>
+                    <Flex align='center' gap={8}>
                       <Avatar src={reel.user.avatar} size={40} />
                       <Text strong style={{ color: "#fff", fontSize: "16px" }}>
-                        {reel.user.username}
+                        {reel.user.fullName}
                       </Text>
                     </Flex>
                     <Paragraph
@@ -183,11 +183,11 @@ const Reels = () => {
                       {reel.caption}
                     </Paragraph>
                   </Flex>
-                  <Flex vertical gap="middle" align="center">
-                    <Flex vertical align="center">
+                  <Flex vertical gap='middle' align='center'>
+                    <Flex vertical align='center'>
                       <Button
-                        type="text"
-                        shape="circle"
+                        type='text'
+                        shape='circle'
                         icon={
                           <HeartOutlined
                             style={{ color: "#fff", fontSize: "28px" }}
@@ -199,10 +199,10 @@ const Reels = () => {
                         {reel.likes.length}
                       </Text>
                     </Flex>
-                    <Flex vertical align="center">
+                    <Flex vertical align='center'>
                       <Button
-                        type="text"
-                        shape="circle"
+                        type='text'
+                        shape='circle'
                         icon={
                           <MessageOutlined
                             style={{ color: "#fff", fontSize: "28px" }}
@@ -215,10 +215,10 @@ const Reels = () => {
                         {reel.comments.length}
                       </Text>
                     </Flex>
-                    <Flex vertical align="center">
+                    <Flex vertical align='center'>
                       <Button
-                        type="text"
-                        shape="circle"
+                        type='text'
+                        shape='circle'
                         icon={
                           <ShareAltOutlined
                             style={{ color: "#fff", fontSize: "28px" }}
@@ -236,14 +236,14 @@ const Reels = () => {
             </div>
           ))
         ) : (
-          <Empty description="No reels yet" />
+          <Empty description='No reels yet' />
         )}
       </Flex>
 
       {/* Tombol Create Reel (di luar container list) */}
       <Button
         onClick={showModal}
-        shape="circle"
+        shape='circle'
         style={{
           height: "48px",
           width: "48px",
@@ -251,8 +251,8 @@ const Reels = () => {
           top: 45,
           right: screens.xs ? 24 : 540,
         }}
-        color="default"
-        variant="solid"
+        color='default'
+        variant='solid'
         icon={<VideoCameraAddOutlined style={{ fontSize: "28px" }} />}
       />
 

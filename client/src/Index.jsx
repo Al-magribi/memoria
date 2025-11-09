@@ -45,7 +45,6 @@ const Index = () => {
         style={{
           maxWidth: 800,
           width: "100%",
-          marginBottom: screens.xs ? 60 : 0,
         }}
       >
         {/* 3. Konten dirender berdasarkan state dari file Index.jsx ini */}

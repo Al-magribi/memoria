@@ -30,18 +30,18 @@ const Left = ({ user, isLoading }) => {
   }, [isSuccess, data]);
 
   return (
-    <Spin tip="Loading Profile..." spinning={isLoading}>
+    <Spin tip='Loading Profile...' spinning={isLoading}>
       <Menu
-        mode="inline"
+        mode='inline'
         selectedKeys={[location.pathname]}
         onClick={handleMenuClick}
         style={{ backgroundColor: "#f0f2f5", border: "none" }}
         items={[
           {
             // 7. Gunakan path sebagai 'key' agar semantik
-            key: `/${user?.username}`,
+            key: `/${user?.fullName?.toLowerCase().replace(/\s/g, ".")}`,
             icon: <Avatar icon={<UserOutlined />} src={user?.avatar} />,
-            label: `@${user?.username}`,
+            label: user?.fullName,
             // Hapus onClick individual
           },
           {

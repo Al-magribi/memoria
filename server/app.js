@@ -1,3 +1,5 @@
+import { createServer } from "http";
+import { Server } from "socket.io";
 import express from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
@@ -8,10 +10,23 @@ import RouterPost from "./routers/RouterPost.js";
 import RouterFriend from "./routers/RouterFriend.js";
 import RouterReel from "./routers/RouterReel.js";
 
+import RouterNotif from "./routers/RouterNotif.js";
+
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.DOMAIN,
+  },
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
@@ -22,6 +37,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/user", RouterUser);
 app.use("/api/post", RouterPost);
 app.use("/api/friend", RouterFriend);
-app.use("/api/reels", RouterReel);
+app.use("/api/reel", RouterReel);
 
-export default app;
+app.use("/api/notif", RouterNotif);
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
+  socket.on("join", (userId) => {
+    socket.join(userId);
+  });
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
+  });
+});
+
+export default server;

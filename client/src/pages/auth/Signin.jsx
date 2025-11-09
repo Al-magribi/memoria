@@ -46,14 +46,8 @@ const Signin = () => {
     if (isLoginSuccess) {
       message.success(loginData.message);
       setSignIn();
-      dispatch(
-        setUser({
-          username: loginData.username,
-          fullName: loginData.fullName,
-          avatar: loginData.avatar,
-        })
-      );
-      navigate("/");
+
+      window.location.href = "/";
     }
 
     if (loginError) {

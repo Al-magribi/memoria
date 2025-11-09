@@ -29,11 +29,10 @@ import { useDeletePostMutation } from "../../../service/post/ApiPost";
 import { Modal } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 
-const { Meta } = Card;
 const { Title, Text, Paragraph } = Typography;
 
 const PostCard = ({ post, isLoading }) => {
-  const timeAgo = useMemo(() => new TimeAgo("id"), []);
+  const timeAgo = useMemo(() => new TimeAgo("en"), []);
 
   const { user } = useSelector((state) => state.user);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -112,7 +111,7 @@ const PostCard = ({ post, isLoading }) => {
             <div style={{ display: "flex", flexDirection: "column" }}>
               <Space>
                 <Title style={{ margin: 0 }} level={5} ellipsis>
-                  {post.username}
+                  {post.fullName}
                 </Title>
                 {post.location?.display_name && (
                   <Tag>

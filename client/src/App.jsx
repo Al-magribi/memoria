@@ -16,10 +16,9 @@ import { Suspense } from "react";
 import LoadingScreen from "./components/loading/LoadingScreen";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import id from "javascript-time-ago/locale/id";
 
 TimeAgo.addLocale(en);
-TimeAgo.addDefaultLocale(id);
+TimeAgo.addDefaultLocale(en);
 
 const Signin = lazy(() => import("./pages/auth/Signin"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -71,7 +70,7 @@ const App = () => {
         <Route path='/activation/:code' element={<Activation />} />
         <Route path='/' element={<Index />} />
         <Route path='/chat' element={<Chat />} />
-        <Route path='/:username' element={<Profile />} />
+        <Route path='/:fullName' element={<Profile />} />
         <Route path='/friends' element={<Friends />} />
         <Route path='/settings' element={<Setting />} />
       </Routes>

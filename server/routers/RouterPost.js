@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import User from "../schema/UserSchema.js";
 import { compressVideo } from "../utils/VideoCompress.js";
 import { compressImage } from "../utils/ImageCompress.js";
+import Notif from "../schema/NotifSchema.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,15 @@ router.post(
       });
 
       await newPost.save();
+
+      const user = await User.findById(userId).select("friends");
+
+      if (user && user.friends.length > 0) {
+        const io = req.io;
+        user.friends.forEach(async (friendId) => {
+          io.to(friendId.toString()).emit("post");
+        });
+      }
 
       res.status(201).json({ message: "Post created successfully" });
     } catch (error) {
@@ -189,13 +199,13 @@ router.delete("/:postId", verify(), async (req, res) => {
 router.get("/my-posts", verify(), async (req, res) => {
   try {
     const posts = await Post.find({ user: req.user.id })
-      .populate("user", "username avatar")
+      .populate("user", "fullName avatar")
       .sort({ createdAt: -1 });
 
     const formattedPosts = posts.map((post) => ({
       id: post._id,
       user: post.user,
-      username: post.user.username,
+      fullName: post.user.fullName,
       avatar: post.user.avatar,
       timestamp: post.createdAt,
       content: post.content,
@@ -207,14 +217,58 @@ router.get("/my-posts", verify(), async (req, res) => {
       location: post.location,
       commentsData: post.comments.map((comment) => ({
         id: comment._id,
-        user: comment.user.username,
+        user: comment.user.fullName,
         avatar: comment.user.avatar,
         text: comment.text,
         likes: comment.likes.length,
         timestamp: comment.createdAt,
         replies: comment.replies.map((reply) => ({
           id: reply._id,
-          user: reply.user.username,
+          user: reply.user.fullName,
+          avatar: reply.user.avatar,
+          text: reply.text,
+          likes: reply.likes.length,
+          timestamp: reply.createdAt,
+        })),
+      })),
+    }));
+
+    res.status(200).json(formattedPosts);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/user-posts/:userId", verify(), async (req, res) => {
+  try {
+    const posts = await Post.find({ user: req.params.userId })
+      .populate("user", "fullName avatar")
+      .sort({ createdAt: -1 });
+
+    const formattedPosts = posts.map((post) => ({
+      id: post._id,
+      user: post.user,
+      fullName: post.user.fullName,
+      avatar: post.user.avatar,
+      timestamp: post.createdAt,
+      content: post.content,
+      images: post.media.filter((m) => m.type === "image"),
+      videos: post.media.filter((m) => m.type === "video"),
+      likes: post.likesCount,
+      comments: post.commentsCount,
+      shares: post.sharesCount,
+      location: post.location,
+      commentsData: post.comments.map((comment) => ({
+        id: comment._id,
+        user: comment.user.fullName,
+        avatar: comment.user.avatar,
+        text: comment.text,
+        likes: comment.likes.length,
+        timestamp: comment.createdAt,
+        replies: comment.replies.map((reply) => ({
+          id: reply._id,
+          user: reply.user.fullName,
           avatar: reply.user.avatar,
           text: reply.text,
           likes: reply.likes.length,
@@ -245,13 +299,13 @@ router.get("/feed", verify(), async (req, res) => {
       user: { $in: userIds },
       privacy: { $in: ["public", "friends"] },
     })
-      .populate("user", "username avatar")
+      .populate("user", "fullName avatar")
       .sort({ createdAt: -1 });
 
     const formattedPosts = posts.map((post) => ({
       id: post._id,
       user: post.user,
-      username: post.user.username,
+      fullName: post.user.fullName,
       avatar: post.user.avatar,
       timestamp: post.createdAt,
       content: post.content,
@@ -263,14 +317,14 @@ router.get("/feed", verify(), async (req, res) => {
       location: post.location,
       commentsData: post.comments.map((comment) => ({
         id: comment._id,
-        user: comment.user.username,
+        user: comment.user.fullName,
         avatar: comment.user.avatar,
         text: comment.text,
         likes: comment.likes.length,
         timestamp: comment.createdAt,
         replies: comment.replies.map((reply) => ({
           id: reply._id,
-          user: reply.user.username,
+          user: reply.user.fullName,
           avatar: reply.user.avatar,
           text: reply.text,
           likes: reply.likes.length,
@@ -300,6 +354,16 @@ router.post("/:postId/like", verify(), async (req, res) => {
     if (userIndex === -1) {
       // Like the post
       post.likes.push(userId);
+      if (post.user.toString() !== userId) {
+        const notif = new Notif({
+          recipient: post.user,
+          sender: userId,
+          type: "like",
+          targetPost: post._id,
+        });
+        await notif.save();
+        req.io.to(post.user.toString()).emit("notification", notif);
+      }
     } else {
       // Unlike the post
       post.likes.splice(userIndex, 1);
@@ -330,6 +394,18 @@ router.post("/:postId/comments", verify(), async (req, res) => {
 
     post.comments.push(comment);
     await post.save();
+
+    if (post.user.toString() !== userId) {
+      const notif = new Notif({
+        recipient: post.user,
+        sender: userId,
+        type: "comment",
+        targetPost: post._id,
+      });
+      await notif.save();
+      req.io.to(post.user.toString()).emit("notification", notif);
+    }
+
     res.status(201).json({ message: "Comment added", post });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -490,23 +566,16 @@ router.delete(
   }
 );
 
-router.get("/user/:username", verify(), async (req, res) => {
+router.get("/get-my-posts", verify(), async (req, res) => {
   try {
-    const { username } = req.params;
-    const user = await User.findOne({ username: username.toLowerCase() });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const posts = await Post.find({ user: user._id })
-      .populate("user", "username avatar")
+    const posts = await Post.find({ user: req.user.id })
+      .populate("user", "fullName avatar")
       .sort({ createdAt: -1 });
 
     const formattedPosts = posts.map((post) => ({
       id: post._id,
       user: post.user,
-      username: post.user.username,
+      fullName: post.user.fullName,
       avatar: post.user.avatar,
       timestamp: post.createdAt,
       content: post.content,
@@ -518,14 +587,14 @@ router.get("/user/:username", verify(), async (req, res) => {
       location: post.location,
       commentsData: post.comments.map((comment) => ({
         id: comment._id,
-        user: comment.user.username,
+        user: comment.user.fullName,
         avatar: comment.user.avatar,
         text: comment.text,
         likes: comment.likes.length,
         timestamp: comment.createdAt,
         replies: comment.replies.map((reply) => ({
           id: reply._id,
-          user: reply.user.username,
+          user: reply.user.fullName,
           avatar: reply.user.avatar,
           text: reply.text,
           likes: reply.likes.length,

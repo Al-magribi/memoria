@@ -1,13 +1,7 @@
 import "dotenv/config";
-import app from "./app.js";
+import "dotenv/config";
+import server from "./app.js";
 import { dbConnect } from "./config/config.js";
-import { createServer } from "http";
-
-const server = createServer(app);
-
-app.get("/", (req, res) => {
-  res.send("Server is Ok");
-});
 
 server.listen(process.env.PORT, async () => {
   try {

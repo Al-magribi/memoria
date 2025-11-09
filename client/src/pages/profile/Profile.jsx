@@ -12,10 +12,10 @@ import {
   Image,
   Space,
   List,
+  message,
 } from "antd";
 import { EditOutlined, MessageOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
-import { PostLists } from "../../Dummies";
 import MainLayout from "../../components/layout/MainLayout";
 import AddPost from "../../components/center/posts/AddPost";
 import PostCard from "../../components/center/posts/PostCard";
@@ -24,9 +24,10 @@ import Friends from "./Friends";
 import Photos from "./Photos";
 import {
   useGetProfileQuery,
+  useLoadUserQuery,
   useUploadProfileImagesMutation,
 } from "../../service/user/ApiUser";
-import { useGetPostsByUsernameQuery } from "../../service/post/ApiPost";
+import { useGetPostsByUserIdQuery } from "../../service/post/ApiPost";
 
 const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
@@ -61,14 +62,14 @@ const ProfilePhotos = ({ User }) => (
 const ProfileFriends = ({ User }) => (
   <Card style={{ marginTop: 16 }}>
     <Title level={5}>Friends</Title>
-    <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+    <Text type='secondary' style={{ display: "block", marginBottom: 16 }}>
       {User?.friendsCount} friends
     </Text>
     <Row gutter={[8, 8]}>
       {User?.friends?.slice(0, 6).map((friend) => (
         // PERBAIKAN: Dibuat responsif, 2 kolom di xs, 3 di sm+
         <Col xs={12} sm={8} key={friend.id}>
-          <Flex vertical align="center" gap={4}>
+          <Flex vertical align='center' gap={4}>
             <Avatar src={friend.avatar} size={64} style={{ borderRadius: 8 }} />
             <Text ellipsis style={{ fontSize: 12, textAlign: "center" }} strong>
               {friend.name}
@@ -85,11 +86,14 @@ const ProfileFriends = ({ User }) => (
 const Profile = () => {
   const navigate = useNavigate();
   const screens = useBreakpoint();
-  const { username } = useParams();
+  const { fullName } = useParams();
 
-  const { data: User } = useGetProfileQuery(username, { skip: !username });
-  const [uploadProfileImages, { isLoading: isUploading }] =
-    useUploadProfileImagesMutation();
+  const { data: User } = useGetProfileQuery(fullName, { skip: !fullName });
+  const [
+    uploadProfileImages,
+    { isLoading: isUploading, isSuccess, data, error },
+  ] = useUploadProfileImagesMutation();
+  const { refetch } = useLoadUserQuery();
 
   const [currentAvatar, setCurrentAvatar] = useState(null);
   const [currentCover, setCurrentCover] = useState(null);
@@ -133,12 +137,24 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
-    await uploadProfileImages(filesToUpload);
-    setFilesToUpload({ avatar: null, cover: null });
+    uploadProfileImages(filesToUpload);
   };
 
-  const { data: posts } = useGetPostsByUsernameQuery(username, {
-    skip: !username,
+  useEffect(() => {
+    if (isSuccess) {
+      message.success(data.message);
+
+      refetch();
+      setFilesToUpload({ avatar: null, cover: null });
+    }
+
+    if (error) {
+      message.error(error.data.message);
+    }
+  }, [data, error, isSuccess, refetch]);
+
+  const { data: posts } = useGetPostsByUserIdQuery(User?._id, {
+    skip: !User,
   });
 
   const handleLayoutTabChange = (key) => {
@@ -164,7 +180,7 @@ const Profile = () => {
 
           {/* Kolom Kanan: Add Post & Feed */}
           <Col xs={24} md={14}>
-            <Flex vertical gap="small">
+            <Flex vertical gap='small'>
               <AddPost />
               {posts?.map((post, index) => (
                 <PostCard key={index} post={post} />
@@ -180,19 +196,19 @@ const Profile = () => {
   ];
 
   return (
-    <MainLayout activeTab="profile" onTabChange={handleLayoutTabChange}>
+    <MainLayout activeTab='profile' onTabChange={handleLayoutTabChange}>
       <input
-        type="file"
+        type='file'
         ref={avatarInputRef}
         style={{ display: "none" }}
-        accept="image/*"
+        accept='image/*'
         onChange={(e) => handleFileChange(e, "avatar")}
       />
       <input
-        type="file"
+        type='file'
         ref={coverInputRef}
         style={{ display: "none" }}
-        accept="image/*"
+        accept='image/*'
         onChange={(e) => handleFileChange(e, "cover")}
       />
 
@@ -207,7 +223,7 @@ const Profile = () => {
         <div style={{ position: "relative" }}>
           <img
             src={currentCover || "/cover.jpeg"}
-            alt="Cover"
+            alt='Cover'
             onClick={handleCoverClick}
             style={{
               width: "100%",
@@ -218,7 +234,7 @@ const Profile = () => {
               display: "block",
               cursor: "pointer",
             }}
-            loading="lazy"
+            loading='lazy'
           />
           {/* Profile Picture */}
           <Avatar
@@ -247,26 +263,26 @@ const Profile = () => {
             minHeight: 116,
             borderBottom: "1px solid #f0f0f0",
           }}
-          align="center"
-          justify="space-between"
-          wrap="wrap"
+          align='center'
+          justify='space-between'
+          wrap='wrap'
         >
           <Flex vertical style={{ marginBottom: 16 }}>
             <Title level={screens.lg ? 2 : 5} style={{ margin: 0 }}>
               {User?.fullName}
             </Title>
-            <Text type="secondary" strong>
+            <Text type='secondary' strong>
               {User?.friendsCount} friends
             </Text>
           </Flex>
           <Space style={{ marginBottom: 16 }}>
             {(filesToUpload.avatar || filesToUpload.cover) && (
-              <Button type="primary" onClick={handleSave} loading={isUploading}>
+              <Button type='primary' onClick={handleSave} loading={isUploading}>
                 Save Changes
               </Button>
             )}
             <Button
-              type="primary"
+              type='primary'
               icon={<EditOutlined />}
               onClick={() => navigate("/settings")}
             >
@@ -278,7 +294,7 @@ const Profile = () => {
 
         {/* Navigasi Tabs (Posts, About, Friends) */}
         <Tabs
-          defaultActiveKey="1"
+          defaultActiveKey='1'
           items={items}
           // PERBAIKAN: Padding tabs dikurangi di mobile
           style={{ padding: screens.md ? "0 32px" : "0 16px" }}

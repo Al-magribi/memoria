@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const ApiReel = createApi({
   reducerPath: "ApiReel",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api/reels",
+    baseUrl: "/api/reel",
     credentials: "include",
   }),
   tagTypes: ["Reels", "User"],

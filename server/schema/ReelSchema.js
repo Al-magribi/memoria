@@ -77,7 +77,7 @@ ReelSchema.virtual("commentCount").get(function () {
 ReelSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user",
-    select: "username fullName avatar",
+    select: "firstName lastName avatar",
   });
   next();
 });
@@ -90,13 +90,13 @@ ReelSchema.pre(/^find/, function (next) {
       populate: [
         {
           path: "user",
-          select: "username fullName avatar",
+          select: "firstName lastName avatar",
         },
         {
           path: "replies",
           populate: {
             path: "user",
-            select: "username fullName avatar",
+            select: "firstName lastName avatar",
           },
         },
       ],

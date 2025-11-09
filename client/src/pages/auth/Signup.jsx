@@ -10,6 +10,7 @@ import {
   message,
   Grid,
   DatePicker,
+  Select,
 } from "antd";
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -79,7 +80,6 @@ const Signup = () => {
               maxWidth: 400,
               width: "100%",
               boxShadow: screens.xs ? "none" : "0 4px 12px rgba(0, 0, 0, 0.1)",
-              padding: "16px",
             }}
           >
             <Flex vertical align='center'>
@@ -99,7 +99,6 @@ const Signup = () => {
               name='register'
               onFinish={onFinish}
               layout='vertical'
-              size='small'
             >
               {/* --- Kolom khusus REGISTER --- */}
               <Form.Item
@@ -112,11 +111,7 @@ const Signup = () => {
                   },
                 ]}
               >
-                <Input
-                  prefix={<UserOutlined />}
-                  placeholder='First Name'
-                  size='large'
-                />
+                <Input prefix={<UserOutlined />} placeholder='First Name' />
               </Form.Item>
 
               <Form.Item
@@ -129,10 +124,22 @@ const Signup = () => {
                   },
                 ]}
               >
-                <Input
-                  prefix={<UserOutlined />}
-                  placeholder='Last Name'
-                  size='large'
+                <Input prefix={<UserOutlined />} placeholder='Last Name' />
+              </Form.Item>
+
+              <Form.Item
+                name='gender'
+                label='Select Gender'
+                rules={[
+                  { required: true, message: "Please select your gender!" },
+                ]}
+              >
+                <Select
+                  options={[
+                    { label: "Male", value: "Male" },
+                    { label: "Female", value: "Female" },
+                  ]}
+                  placeholder='Select Gender'
                 />
               </Form.Item>
 
@@ -149,7 +156,6 @@ const Signup = () => {
                 <DatePicker
                   style={{ width: "100%" }}
                   placeholder='Select your date of birth'
-                  size='large'
                 />
               </Form.Item>
 
@@ -162,11 +168,7 @@ const Signup = () => {
                   { type: "email", message: "The input is not valid E-mail!" },
                 ]}
               >
-                <Input
-                  prefix={<MailOutlined />}
-                  placeholder='Email'
-                  size='large'
-                />
+                <Input prefix={<MailOutlined />} placeholder='Email' />
               </Form.Item>
 
               <Form.Item
@@ -180,7 +182,6 @@ const Signup = () => {
                   prefix={<LockOutlined />}
                   type='password'
                   placeholder='Password'
-                  size='large'
                 />
               </Form.Item>
 
@@ -190,7 +191,6 @@ const Signup = () => {
                   type='primary'
                   htmlType='submit'
                   block
-                  size='large'
                   loading={isLoadingSignup}
                 >
                   Sign up

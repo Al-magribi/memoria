@@ -72,7 +72,13 @@ router.post(
 
       await user.save();
 
-      res.status(200).json({ message: "Profile images uploaded successfully" });
+      res.status(200).json({
+        message: "Profile images uploaded successfully",
+        user: {
+          avatar: user.avatar,
+          coverPhoto: user.coverPhoto,
+        },
+      });
     } catch (error) {
       console.error("Error uploading profile images:", error);
       res.status(500).json({ message: "Error uploading images" });
@@ -83,19 +89,20 @@ router.post(
 // User Signup
 router.post("/signup", async (req, res) => {
   try {
-    const { firstName, lastName, dob, email, password } = req.body;
+    const { firstName, lastName, gender, dob, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
         .status(409)
-        .json({ message: "Username or email already exists" });
+        .json({ message: "Email already exists" });
     }
 
     // 1. Buat user baru di memori (JANGAN .save() dulu)
     const newUser = new User({
       firstName,
       lastName,
+      gender,
       dob,
       email,
       password,
@@ -120,6 +127,12 @@ router.post("/signup", async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+
+    // Handle Mongoose validation errors
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((val) => val.message);
+      return res.status(400).json({ message: messages });
+    }
 
     // Kirim response error yang lebih spesifik jika ini error email
     if (error.code === "EAUTH" || error.command === "AUTH PLAIN") {
@@ -161,12 +174,7 @@ router.post("/signin", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({
-      message: "Signin successful!",
-      username: user.username,
-      fullName: user.fullName,
-      avatar: user.avatar,
-    });
+    res.status(200).json({ message: "Signin successful!" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
@@ -176,7 +184,9 @@ router.post("/signin", async (req, res) => {
 // Activate Account
 router.post("/activate", async (req, res) => {
   try {
-    const { activationCode, username, gender } = req.query;
+    const { activationCode } = req.query;
+
+    console.log(activationCode);
 
     // Hash the incoming token so we can match it to the hashed version in the DB
     const hashedToken = crypto
@@ -190,8 +200,6 @@ router.post("/activate", async (req, res) => {
       return res.status(400).json({ message: "Invalid activation code." });
     }
 
-    user.username = username;
-    user.gender = gender;
     user.isVerified = true;
     user.verificationToken = undefined;
     await user.save({ validateBeforeSave: false });
@@ -209,7 +217,7 @@ router.get("/load", verify(), async (req, res) => {
     const { _id } = req.user;
 
     const user = await User.findOne({ _id }).select(
-      "username firstName lastName avatar email phone privacy"
+      "fullName firstName lastName avatar email phone privacy"
     );
 
     if (!user) {
@@ -218,10 +226,9 @@ router.get("/load", verify(), async (req, res) => {
 
     res.status(200).json({
       _id: user._id,
-      username: user.username,
+      fullName: user.fullName,
       firstName: user.firstName,
       lastName: user.lastName,
-      fullName: user.fullName,
       avatar: user.avatar,
       email: user.email,
       phone: user.phone,
@@ -234,15 +241,24 @@ router.get("/load", verify(), async (req, res) => {
   }
 });
 
-router.get("/profile/:username", verify(), async (req, res) => {
+router.get("/profile/:fullName", verify(), async (req, res) => {
   try {
     // 1. Identifikasi siapa yang meminta (requestingUser)
     const requestingUserId = req.user ? req.user._id : null;
 
     // 2. Temukan user yang profilnya ingin dilihat (profileUser)
-    const { username } = req.params;
+    const { fullName } = req.params;
+    // Mengganti '.' menjadi spasi untuk mencocokkan format nama di database
+    const searchFullName = fullName.replace(/\./g, " ");
+
+    // Karena fullName adalah virtual, kita perlu mencari berdasarkan firstName dan lastName
+    const nameParts = searchFullName.split(" ");
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ");
+
     const profileUser = await User.findOne({
-      username: username.toLowerCase(),
+      firstName: new RegExp(`^${firstName}$`, "i"),
+      lastName: new RegExp(`^${lastName}$`, "i"),
     }).select("privacy friends"); // Ambil setelan privasi dan daftar teman
 
     if (!profileUser) {
@@ -272,7 +288,7 @@ router.get("/profile/:username", verify(), async (req, res) => {
       // Kita kembalikan data minimal (bukan error 403)
       // agar frontend bisa menampilkan info dasar (foto, nama)
       const minimalProfile = await User.findById(profileUser._id).select(
-        "username firstName lastName avatar"
+        "fullName firstName lastName avatar"
       );
       return res.status(200).json({
         message: "This profile is only visible to friends.",
@@ -327,7 +343,7 @@ router.get("/profile/:username", verify(), async (req, res) => {
 router.put("/settings/general", verify(), async (req, res) => {
   try {
     const { _id } = req.user;
-    const { firstName, lastName, username } = req.body;
+    const { firstName, lastName } = req.body;
 
     const user = await User.findById(_id);
 
@@ -335,9 +351,12 @@ router.put("/settings/general", verify(), async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.firstName = firstName || user.firstName;
-    user.lastName = lastName || user.lastName;
-    user.username = username || user.username;
+    if (firstName) {
+      user.firstName = firstName;
+    }
+    if (lastName) {
+      user.lastName = lastName;
+    }
 
     await user.save();
 

@@ -15,13 +15,6 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Last name is required"],
     },
-    username: {
-      type: String,
-      trim: true,
-      unique: true,
-      lowercase: true,
-      index: true,
-    },
     email: {
       type: String,
       trim: true,
@@ -132,23 +125,6 @@ const UserSchema = new mongoose.Schema(
         default: false,
       },
     },
-
-    /*
-    --- Catatan tentang Notifikasi ---
-    Menyimpan notifikasi sebagai array di dalam User schema bisa menjadi tidak efisien
-    jika jumlah notifikasi sangat besar (unbounded array).
-    Praktik yang lebih baik (scalable) adalah membuat Model/Schema terpisah:
-    
-    const NotificationSchema = new mongoose.Schema({
-      recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-      sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      type: { type: String, enum: ['like', 'comment', 'friend_request'], required: true },
-      targetPost: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
-      read: { type: Boolean, default: false },
-    }, { timestamps: true });
-    
-    Lalu Anda bisa query: Notification.find({ recipient: userId, read: false })
-    */
   },
   {
     // --- Opsi Skema ---
@@ -225,17 +201,12 @@ UserSchema.statics.searchUsers = function (query, limit = 10, skip = 0) {
   const searchRegex = new RegExp(query, "i");
 
   return this.find({
-    $or: [
-      { username: searchRegex },
-      { firstName: searchRegex },
-      { lastName: searchRegex },
-    ],
+    $or: [{ firstName: searchRegex }, { lastName: searchRegex }],
     isActive: true,
   })
-    .select("username firstName lastName avatar bio")
+    .select("firstName lastName avatar bio")
     .limit(limit)
-    .skip(skip)
-    .sort({ username: 1 });
+    .skip(skip);
 };
 
 // --- 7. STATIC METHOD (Get Profile) ---
@@ -244,7 +215,6 @@ UserSchema.statics.getPublicProfile = function (
   requestingUserId = null
 ) {
   const projection = {
-    username: 1,
     firstName: 1,
     lastName: 1,
     avatar: 1,
@@ -284,7 +254,7 @@ UserSchema.statics.getPublicProfile = function (
     .select(projection)
     .populate({
       path: "friends",
-      select: "username fullName avatar",
+      select: "fullName avatar",
       options: { limit: 6 }, // <-- BATASI HANYA 6 TEMAN
     });
 };

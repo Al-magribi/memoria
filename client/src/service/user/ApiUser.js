@@ -47,8 +47,8 @@ export const ApiUser = createApi({
       providesTags: ["User"],
     }),
     getProfile: builder.query({
-      query: (username) => ({
-        url: `/profile/${username}`,
+      query: (fullName) => ({
+        url: `/profile/${fullName}`,
         method: "GET",
       }),
       providesTags: ["User"],

@@ -3,6 +3,8 @@ import SliceUser from "./user/SliceUser";
 import { ApiUser } from "./user/ApiUser";
 import { ApiPost } from "./post/ApiPost";
 import { ApiReel } from "./reel/ApiReel";
+import { ApiFriend } from "./friends/ApiFriend";
+import { ApiNotif } from "./notif/ApiNotif";
 
 const store = configureStore({
   reducer: {
@@ -10,12 +12,17 @@ const store = configureStore({
     [ApiUser.reducerPath]: ApiUser.reducer,
     [ApiPost.reducerPath]: ApiPost.reducer,
     [ApiReel.reducerPath]: ApiReel.reducer,
+    [ApiFriend.reducerPath]: ApiFriend.reducer,
+    [ApiNotif.reducerPath]: ApiNotif.reducer,
   },
+
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
       ApiUser.middleware,
       ApiPost.middleware,
       ApiReel.middleware,
+      ApiFriend.middleware,
+      ApiNotif.middleware,
     ]),
 });
 

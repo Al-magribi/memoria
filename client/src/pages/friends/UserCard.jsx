@@ -1,43 +1,74 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, Avatar, Button, Flex, Typography } from "antd";
-import { UserAddOutlined, CheckOutlined } from "@ant-design/icons";
+import {
+  UserAddOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  UserDeleteOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
-const UserCard = ({ user }) => {
-  // State lokal untuk simulasi tambah/hapus teman
-  const [isFriend, setIsFriend] = useState(user.isFriend);
-  const [loading, setLoading] = useState(false);
-
-  const handleAdd = () => {
-    setLoading(true);
-    // Simulasi API call
-    setTimeout(() => {
-      setIsFriend(!isFriend);
-      setLoading(false);
-    }, 500);
+const UserCard = ({
+  user,
+  status,
+  onAdd,
+  onAccept,
+  onReject,
+  onCancel,
+  onRemove,
+}) => {
+  const renderButtons = () => {
+    switch (status) {
+      case "add":
+        return (
+          <Button
+            type='primary'
+            icon={<UserAddOutlined />}
+            onClick={onAdd}
+            block
+          >
+            Add Friend
+          </Button>
+        );
+      case "sent":
+        return (
+          <Button onClick={onCancel} block>
+            Cancel Request
+          </Button>
+        );
+      case "received":
+        return (
+          <Flex wrap='wrap' justify='center' align='center' gap='small'>
+            <Button type='primary' icon={<CheckOutlined />} onClick={onAccept}>
+              Accept
+            </Button>
+            <Button danger icon={<CloseOutlined />} onClick={onReject}>
+              Decline
+            </Button>
+          </Flex>
+        );
+      case "friend":
+        return (
+          <Button danger icon={<UserDeleteOutlined />} onClick={onRemove} block>
+            Remove Friend
+          </Button>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <Card hoverable>
-      <Flex vertical align="center" gap="small">
-        <Avatar src={user.avatar} size={80} />
-        <Title level={5} style={{ margin: 0, textAlign: "center" }}>
-          {user.name}
+      <Flex vertical align='center' gap='small'>
+        <Avatar src={user.avatar} size={80} icon={<UserOutlined />} />
+        <Title ellipsis level={5} style={{ margin: 0, textAlign: "center" }}>
+          {`${user.firstName} ${user.lastName}`}
         </Title>
-        <Text type="secondary" style={{ textAlign: "center" }}>
-          @{user.username}
-        </Text>
-        <Button
-          type={isFriend ? "default" : "primary"}
-          icon={isFriend ? <CheckOutlined /> : <UserAddOutlined />}
-          onClick={handleAdd}
-          loading={loading}
-          block
-          style={{ marginTop: 8 }}
-        >
-          {isFriend ? "Friend" : "Add Friend"}
-        </Button>
+
+        <div style={{ marginTop: 8 }}>{renderButtons()}</div>
       </Flex>
     </Card>
   );
