@@ -5,6 +5,7 @@ import { ApiPost } from "./post/ApiPost";
 import { ApiReel } from "./reel/ApiReel";
 import { ApiFriend } from "./friends/ApiFriend";
 import { ApiNotif } from "./notif/ApiNotif";
+import { ApiChat } from "./chat/ApiChat";
 
 const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
     [ApiReel.reducerPath]: ApiReel.reducer,
     [ApiFriend.reducerPath]: ApiFriend.reducer,
     [ApiNotif.reducerPath]: ApiNotif.reducer,
+    [ApiChat.reducerPath]: ApiChat.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -23,6 +25,7 @@ const store = configureStore({
       ApiReel.middleware,
       ApiFriend.middleware,
       ApiNotif.middleware,
+      ApiChat.middleware,
     ]),
 });
 

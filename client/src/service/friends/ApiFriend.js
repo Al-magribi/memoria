@@ -9,27 +9,15 @@ export const ApiFriend = createApi({
   tagTypes: ["Friends", "Users", "FriendRequests"],
   endpoints: (builder) => ({
     getUsers: builder.query({
-      query: ({ page = 1 }) => `/get-users?page=${page}`,
-      serializeQueryArgs: ({ endpointName }) => {
-        return endpointName;
-      },
-      merge: (currentCache, newItems) => {
-        const existingIds = new Set(currentCache.users.map((u) => u._id));
-        const newUsers = newItems.users.filter((u) => !existingIds.has(u._id));
-        currentCache.users.push(...newUsers);
-        currentCache.hasMore = newItems.hasMore;
-        currentCache.sentRequests = newItems.sentRequests;
-      },
-      forceRefetch({ currentArg, previousArg }) {
-        return currentArg?.page !== previousArg?.page;
-      },
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.users.map(({ _id }) => ({ type: "Users", id: _id })),
-              { type: "Users", id: "LIST" },
-            ]
-          : [{ type: "Users", id: "LIST" }],
+      query: ({ page = 1, search }) => ({
+        url: "/get-users",
+        params: { page, search },
+      }),
+      providesTags: ["Users"],
+    }),
+    getOnlineFriends: builder.query({
+      query: () => "/get-online-friends",
+      providesTags: ["Friends"],
     }),
     getMyFriends: builder.query({
       query: () => "/get-my-friends",
@@ -79,6 +67,7 @@ export const ApiFriend = createApi({
 
 export const {
   useGetUsersQuery,
+  useGetOnlineFriendsQuery,
   useGetMyFriendsQuery,
   useGetFriendRequestsQuery,
   useAddFriendMutation,

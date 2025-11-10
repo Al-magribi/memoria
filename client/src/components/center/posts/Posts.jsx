@@ -34,8 +34,8 @@ const Posts = () => {
     // Tampilkan spinner di tengah, bukan membungkus komponen Empty
     if (isLoading) {
       return (
-        <Flex justify='center' align='center' style={{ minHeight: "200px" }}>
-          <Spin tip='Loading Feed...' size='large' />
+        <Flex justify="center" align="center" style={{ minHeight: "200px" }}>
+          <Spin size="large" />
         </Flex>
       );
     }
@@ -46,11 +46,11 @@ const Posts = () => {
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description={
-            <Flex vertical align='center'>
-              <Title level={4} type='danger'>
+            <Flex vertical align="center">
+              <Title level={4} type="danger">
                 Failed to load feed
               </Title>
-              <Text type='secondary'>Please try again later.</Text>
+              <Text type="secondary">Please try again later.</Text>
             </Flex>
           }
         />
@@ -61,17 +61,17 @@ const Posts = () => {
     if (!PostLists || PostLists.length === 0) {
       return (
         <Empty
-          image='https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg'
+          image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg"
           description={
-            <Flex vertical align='center'>
+            <Flex vertical align="center">
               <Title level={4}>There are no posts yet</Title>
-              <Text type='secondary'>
+              <Text type="secondary">
                 Follow your friends to see their posts on your Feed
               </Text>
             </Flex>
           }
         >
-          <Button type='primary' onClick={() => navigate("/friends")}>
+          <Button type="primary" onClick={() => navigate("/friends")}>
             Find Friends
           </Button>
         </Empty>

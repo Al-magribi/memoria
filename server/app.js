@@ -5,12 +5,14 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 
+import User from "./schema/UserSchema.js";
+
 import RouterUser from "./routers/RouterUser.js";
 import RouterPost from "./routers/RouterPost.js";
 import RouterFriend from "./routers/RouterFriend.js";
 import RouterReel from "./routers/RouterReel.js";
-
 import RouterNotif from "./routers/RouterNotif.js";
+import RouterChat from "./routers/RouterChat.js";
 
 const app = express();
 const server = createServer(app);
@@ -38,15 +40,26 @@ app.use("/api/user", RouterUser);
 app.use("/api/post", RouterPost);
 app.use("/api/friend", RouterFriend);
 app.use("/api/reel", RouterReel);
-
 app.use("/api/notif", RouterNotif);
+app.use("/api/chat", RouterChat);
 
 io.on("connection", (socket) => {
   console.log("a user connected");
-  socket.on("join", (userId) => {
+
+  socket.on("join", async (userId) => {
     socket.join(userId);
+    socket.userId = userId;
+
+    await User.findByIdAndUpdate(userId, { isLogin: true });
+
+    const user = await User.findById(socket.userId).select("friends");
+
+    user.friends.forEach(async (friendId) => {
+      io.to(friendId.toString()).emit("status");
+    });
   });
-  socket.on("disconnect", () => {
+
+  socket.on("disconnect", async () => {
     console.log("user disconnected");
   });
 });

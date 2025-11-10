@@ -5,12 +5,32 @@ import Notif from "../schema/NotifSchema.js";
 
 const router = Router();
 
+router.get("/get-online-friends", verify(), async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: "friends",
+      // Hanya populate teman yang memiliki isLogin: true
+      match: { isLogin: true },
+      // Tetap pilih field yang Anda inginkan
+      select: "firstName lastName avatar isLogin",
+    });
+
+    res.json(user.friends);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all users and data about friend statuses
 router.get("/get-users", verify(), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
+
+    // Ambil istilah pencarian dari query string
+    const searchTerm = req.query.search || "";
 
     // Find users to whom the current user has sent a request
     const usersWithMyRequest = await User.find({
@@ -21,21 +41,38 @@ router.get("/get-users", verify(), async (req, res) => {
 
     const sentRequestIds = usersWithMyRequest.map((u) => u._id.toString());
 
-    // Get all users, excluding the current user, with pagination
-    const usersQuery = User.find({ _id: { $ne: req.user._id } })
+    // --- MODIFIKASI DIMULAI DISINI ---
+
+    // 1. Buat filter dasar
+    const queryFilter = {
+      _id: { $ne: req.user._id }, // Selalu kecualikan diri sendiri
+    };
+
+    // 2. Jika ada 'searchTerm', tambahkan filter $or untuk mencari
+    if (searchTerm) {
+      const regex = new RegExp(searchTerm, "i"); // 'i' untuk case-insensitive
+      queryFilter.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { username: regex },
+      ];
+    }
+
+    // 3. Terapkan filter ke query dan count
+    const usersQuery = User.find(queryFilter) // Gunakan queryFilter
       .select("firstName lastName username avatar")
       .skip(skip)
       .limit(limit)
       .lean();
 
     const users = await usersQuery;
-    const totalUsers = await User.countDocuments({
-      _id: { $ne: req.user._id },
-    });
+    const totalUsers = await User.countDocuments(queryFilter); // Gunakan queryFilter
+
+    // --- MODIFIKASI SELESAI ---
 
     res.json({
       users,
-      sentRequests: sentRequestIds, // IDs of users I've sent a request to
+      sentRequests: sentRequestIds,
       totalUsers,
       hasMore: page * limit < totalUsers,
     });

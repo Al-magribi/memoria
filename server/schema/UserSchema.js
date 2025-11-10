@@ -78,6 +78,7 @@ const UserSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false }, // Verifikasi email
     isActive: { type: Boolean, default: true },
     lastSeen: { type: Date, default: Date.now },
+    isLogin: { type: Boolean, default: false },
 
     // --- Keamanan & Token --- (TAMBAHAN)
     verificationToken: { type: String, select: false },
