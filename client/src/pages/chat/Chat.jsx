@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import ContactList from "./ContactList";
 import ChatWindow from "./ChatWindow";
 import {
-  useGetConversationsQuery,
+  useGetConversationsQuery, // <-- Akan dimodifikasi
   useCreateChatMutation,
   useGetMyFriendsQuery,
 } from "../../service/chat/ApiChat";
@@ -18,118 +18,102 @@ const Chat = () => {
   const socket = useSocket();
   const navigate = useNavigate();
   const screens = useBreakpoint();
-
   const { user } = useSelector((state) => state.user);
 
-  // --- PERUBAHAN 1 ---
-  // Mengganti nama state agar lebih jelas. Ini akan *selalu* User ID.
+  // --- State (Tidak Berubah) ---
+  const [listTab, setListTab] = useState("chats"); // 'chats' or 'contacts'
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [currentMessage, setCurrentMessage] = useState("");
-
-  const {
-    data: conversations,
-    isLoading,
-    refetch,
-  } = useGetConversationsQuery();
-
-  const [searchTerm, setSearchTerm] = useState("");
   const chatBodyRef = useRef(null);
 
-  const { data: myFriends } = useGetMyFriendsQuery(
+  // --- 1. PERUBAHAN PENGAMBILAN DATA ---
+  // Sekarang 'useGetConversationsQuery' juga menerima 'searchTerm'
+  const {
+    data: conversations,
+    isLoading: isLoadingConvos,
+    refetch,
+  } = useGetConversationsQuery({ search: searchTerm }); // <-- PERUBAHAN DI SINI
+
+  // Query ini sudah benar, 'searchTerm' dikirim ke server
+  const { data: myFriends, isLoading: isLoadingFriends } = useGetMyFriendsQuery(
     { search: searchTerm },
-    { skip: !searchTerm }
+    { skip: false }
   );
 
-  // --- PERUBAHAN 2 ---
-  // Memperbarui `allContacts` agar `id` *selalu* User ID.
-  const allContacts = useMemo(() => {
-    const conversationContacts =
-      conversations
-        ?.map((convo) => {
-          const otherParticipant = convo.participants.find(
-            (p) => p._id !== user._id
-          );
-          if (!otherParticipant || !otherParticipant.fullName) {
-            return null;
-          }
-          return {
-            id: otherParticipant._id, // <-- Kunci: ID adalah User ID
-            conversationId: convo._id, // <-- Simpan ID percakapan di sini
-            name: otherParticipant.fullName,
-            avatar: otherParticipant.avatar,
-            lastMessage: convo.lastMessage,
-            isLogin: otherParticipant.isLogin,
-            isNew: false,
-          };
-        })
-        .filter(Boolean) || [];
+  // --- 2. LOGIKA MEMO (Tidak ada filter client-side) ---
 
-    // `existingContactIds` sekarang berisi User ID, yang sudah benar.
-    const existingContactIds = new Set(conversationContacts.map((c) => c.id));
+  // MEMO 1: Daftar untuk tab "Chats"
+  // 'conversations' SUDAH difilter oleh server
+  const conversationContacts = useMemo(() => {
+    return (conversations || [])
+      .map((convo) => {
+        const other = convo.participants.find((p) => p._id !== user._id);
+        if (!other || !other.firstName) return null;
+        return {
+          id: other._id,
+          conversationId: convo._id,
+          name: `${other.firstName} ${other.lastName}`,
+          avatar: other.avatar,
+          lastMessage: convo.lastMessage,
+          isLogin: other.isLogin,
+        };
+      })
+      .filter(Boolean);
+  }, [conversations, user]); // Hanya bergantung pada 'conversations'
 
-    const friendContacts =
-      myFriends
-        ?.filter(
-          (friend) =>
-            friend && friend.fullName && !existingContactIds.has(friend._id)
-        )
-        .map((friend) => ({
-          id: friend._id,
-          conversationId: null,
-          name: friend.fullName,
-          avatar: friend.avatar,
-          lastMessage: { content: "Start a conversation" },
-          isLogin: friend.isLogin,
-          isNew: true,
-        })) || [];
+  // MEMO 2: Daftar untuk tab "Contact"
+  // 'myFriends' SUDAH difilter oleh server
+  const friendContacts = useMemo(() => {
+    return (myFriends || []).map((friend) => ({
+      id: friend._id,
+      conversationId: null,
+      name: friend.fullName,
+      avatar: friend.avatar,
+      lastMessage: { content: "Start a conversation" },
+      isLogin: friend.isLogin,
+    }));
+  }, [myFriends]); // Hanya bergantung pada 'myFriends'
 
-    return [...conversationContacts, ...friendContacts];
-  }, [conversations, myFriends, user]);
-
-  // Logika ini sekarang bekerja dengan sempurna:
+  // --- 3. PERUBAHAN LOGIKA: `filteredContacts` (Sangat Disederhanakan) ---
+  // Tidak perlu filter client-side lagi
   const filteredContacts = useMemo(() => {
-    if (!searchTerm) {
-      // 1. searchTerm kosong, 'myFriends' tidak di-fetch.
-      // 2. 'allContacts' hanya berisi 'conversationContacts'.
-      // 3. Filter '!contact.isNew' mengembalikan semua 'conversationContacts'.
-      // (Persyaratan 2 terpenuhi)
-      return allContacts.filter((contact) => !contact.isNew);
+    if (listTab === "chats") {
+      // Cukup kembalikan data yang sudah difilter server
+      return conversationContacts;
+    } else {
+      // Cukup kembalikan data yang sudah difilter server
+      return friendContacts;
     }
-    // 1. searchTerm ada, 'myFriends' di-fetch dengan filter.
-    // 2. 'allContacts' berisi 'conversations' + 'filtered friends'.
-    // 3. Filter 'c.name.includes' mencari di keduanya.
-    // (Persyaratan 1 terpenuhi)
-    return allContacts.filter((c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [allContacts, searchTerm]);
+    // Hapus 'searchTerm' dari dependensi, karena filter ada di server
+  }, [listTab, conversationContacts, friendContacts]);
 
-  // --- PERUBAHAN 3 ---
-  // Mencari kontak berdasarkan `selectedUserId`
-  const selectedContact = allContacts.find((c) => c.id === selectedUserId);
+  // --- 4. 'selectedContact' (Tidak Berubah) ---
+  // Logika ini tetap diperlukan untuk menemukan kontak yang diklik
+  const selectedContact = useMemo(() => {
+    if (!selectedUserId) return null;
+    const fromConvo = conversationContacts.find((c) => c.id === selectedUserId);
+    if (fromConvo) return fromConvo;
+    const fromFriend = friendContacts.find((c) => c.id === selectedUserId);
+    if (fromFriend) return fromFriend;
+    return null;
+  }, [selectedUserId, conversationContacts, friendContacts]);
 
+  // --- 5. Handlers (Tidak Berubah) ---
   const [createChat, { isLoading: isSending }] = useCreateChatMutation();
 
-  useEffect(() => {
-    if (chatBodyRef.current) {
-      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-    }
-    // Mengganti dependensi ke `selectedUserId`
-  }, [selectedUserId]);
-
-  // --- PERUBAHAN 4 ---
-  // Memperbarui `handleSendMessage` untuk menggunakan `selectedContact.id`
   const handleSendMessage = async () => {
-    // Gunakan `selectedUserId` untuk pengecekan
-    if (!currentMessage.trim() || !selectedUserId) return;
+    if (!currentMessage.trim() || !selectedUserId || !selectedContact) return;
 
     try {
       await createChat({
-        // `selectedContact.id` sekarang adalah `receiverId` (User ID)
         receiverId: selectedContact.id,
         content: currentMessage,
       }).unwrap();
       setCurrentMessage("");
+      if (!selectedContact.conversationId) {
+        refetch();
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -140,25 +124,20 @@ const Chat = () => {
     navigate("/");
   };
 
-  // --- PERBAIKAN DI SINI ---
+  // Socket.IO useEffect (Tidak Berubah)
   useEffect(() => {
     if (socket) {
-      // 1. Buat fungsi handler yang spesifik
       const handleNewChat = () => {
-        // Refetch daftar percakapan (untuk ContactList)
         refetch();
       };
-
-      // 2. Daftarkan handler
       socket.on("newChat", handleNewChat);
-
-      // 3. Kembalikan fungsi cleanup yang menghapus handler YANG SAMA
       return () => {
         socket.off("newChat", handleNewChat);
       };
     }
-  }, [refetch, socket]); // Dependensi sudah benar
-  // --- AKHIR PERBAIKAN ---
+  }, [refetch, socket]);
+
+  // --- 6. Render (Tidak Berubah) ---
   return (
     <MainLayout activeTab={"chat"} onTabChange={handleLayoutTabChange}>
       <Card
@@ -170,8 +149,6 @@ const Chat = () => {
         styles={{ body: { padding: 0, height: "100%" } }}
       >
         <Row style={{ height: "100%" }}>
-          {/* --- PERUBAHAN 5 --- */}
-          {/* Menggunakan `selectedUserId` untuk logika tampilan mobile */}
           {(screens.md || !selectedUserId) && (
             <Col
               xs={24}
@@ -183,29 +160,26 @@ const Chat = () => {
             >
               <ContactList
                 contacts={filteredContacts}
-                // Mengirim `selectedUserId` sebagai prop
                 selectedContactId={selectedUserId}
                 onSelectContact={setSelectedUserId}
                 onSearch={setSearchTerm}
-                loading={isLoading}
+                loading={isLoadingConvos || isLoadingFriends} // Gabungkan loading
+                activeListTab={listTab}
+                onListTabChange={setListTab}
               />
             </Col>
           )}
 
-          {/* Menggunakan `selectedUserId` untuk logika tampilan mobile */}
           {(screens.md || selectedUserId) && (
             <Col xs={24} md={16} style={{ height: "100%" }}>
               <ChatWindow
                 contact={selectedContact}
-                // --- PERUBAHAN 6 (KUNCI) ---
-                // Teruskan `conversationId` yang benar (bisa null)
                 conversationId={selectedContact?.conversationId}
                 user={user}
                 onSendMessage={handleSendMessage}
                 isSending={isSending}
                 currentMessage={currentMessage}
                 onCurrentMessageChange={setCurrentMessage}
-                // Set state kembali ke null
                 onBack={() => setSelectedUserId(null)}
                 chatBodyRef={chatBodyRef}
               />

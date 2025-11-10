@@ -16,7 +16,10 @@ export const ApiChat = createApi({
       providesTags: ["Conversations"],
     }),
     getConversations: builder.query({
-      query: () => "/get-conversations",
+      query: ({ search }) => ({
+        url: "/get-conversations",
+        params: { search },
+      }),
       providesTags: ["Conversations"],
     }),
     getChats: builder.query({
@@ -32,6 +35,13 @@ export const ApiChat = createApi({
       }),
       invalidatesTags: ["Conversations", "Chats"],
     }),
+    markAsRead: builder.mutation({
+      query: (conversationId) => ({
+        url: `/mark-as-read/${conversationId}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Conversations", "Chats"],
+    }),
   }),
 });
 
@@ -40,4 +50,5 @@ export const {
   useGetMyFriendsQuery,
   useGetChatsQuery,
   useCreateChatMutation,
+  useMarkAsReadMutation,
 } = ApiChat;

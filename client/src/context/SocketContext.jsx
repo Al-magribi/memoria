@@ -19,9 +19,19 @@ const SocketContext = ({ children }) => {
       setSocket(newSocket);
 
       newSocket.emit("join", user._id);
-      console.log(`Socket 'join' emitted for user: ${user._id}`);
+
+      newSocket.on("connect", () => {
+        newSocket.emit("join", user._id);
+        console.log(`Socket reconnected and 'join' re-emitted for user: ${user._id}`);
+      });
+
+      newSocket.on("disconnect", (reason) => {
+        console.log(`Socket disconnected: ${reason}`);
+      });
 
       return () => {
+        newSocket.off("connect");
+        newSocket.off("disconnect");
         newSocket.disconnect();
         setSocket(null);
       };

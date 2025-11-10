@@ -1,7 +1,17 @@
 import React, { useEffect } from "react";
 import { Flex, Button, Avatar, Typography, Input, Empty, Grid } from "antd";
-import { ArrowLeftOutlined, SendOutlined } from "@ant-design/icons";
-import { useGetChatsQuery } from "../../service/chat/ApiChat";
+// --- 1. Impor CheckOutlined ---
+import {
+  ArrowLeftOutlined,
+  SendOutlined,
+  CheckOutlined,
+  CheckCircleOutlined,
+  CheckCircleFilled, // <--- TAMBAHAN
+} from "@ant-design/icons";
+import {
+  useGetChatsQuery,
+  useMarkAsReadMutation,
+} from "../../service/chat/ApiChat";
 import { useSocket } from "../../context/SocketContext";
 
 const { useBreakpoint } = Grid;
@@ -16,10 +26,11 @@ const ChatWindow = ({
   currentMessage,
   onCurrentMessageChange,
   onBack,
-  chatBodyRef, // <--- Ref tetap diterima dari parent
+  chatBodyRef,
 }) => {
   const socket = useSocket();
   const screens = useBreakpoint();
+
   const {
     data: messages,
     isLoading,
@@ -27,56 +38,73 @@ const ChatWindow = ({
     refetch,
   } = useGetChatsQuery(conversationId, { skip: !conversationId });
 
+  const [markAsRead] = useMarkAsReadMutation();
+
+  useEffect(() => {
+    if (conversationId) {
+      markAsRead(conversationId);
+    }
+  }, [conversationId, markAsRead]);
+
   useEffect(() => {
     if (socket) {
       const handleNewChat = () => {
         refetch();
+        if (conversationId) {
+          markAsRead(conversationId);
+        }
+      };
+
+      const handleMessagesRead = (data) => {
+        if (data.conversationId === conversationId) {
+          refetch();
+        }
       };
 
       socket.on("newChat", handleNewChat);
+      socket.on("messagesRead", handleMessagesRead);
 
-      return () => socket.off("newChat", handleNewChat);
+      return () => {
+        socket.off("newChat", handleNewChat);
+        socket.off("messagesRead", handleMessagesRead);
+      };
     }
-  }, [socket, refetch]);
+  }, [socket, refetch, conversationId, markAsRead]);
 
-  // --- PERBAIKAN DI SINI ---
-  // Tambahkan useEffect ini untuk menangani auto-scroll
-  // 'messages' adalah dependensi kuncinya
+  // --- (Logika auto-scroll tidak berubah) ---
   useEffect(() => {
     if (chatBodyRef.current) {
-      // Set scrollTop ke scrollHeight untuk memaksa scroll ke bawah
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
-  }, [messages, chatBodyRef]); // Akan re-run setiap 'messages' berubah
-  // --- AKHIR PERBAIKAN ---
+  }, [messages, chatBodyRef]);
+  // --- (Akhir logika auto-scroll) ---
 
   return (
     <Flex vertical style={{ height: "100%", background: "#fff" }}>
       {contact ? (
         <>
-          {/* Header Chat */}
+          {/* Header Chat (Tidak berubah) */}
           <Flex
-            align="center"
-            gap="middle"
+            align='center'
+            gap='middle'
             style={{
               padding: "12px 16px",
               borderBottom: "1px solid #f0f0f0",
               background: "#fff",
             }}
           >
-            {/* Tombol Kembali (Hanya di Mobile) */}
             {!screens.md && (
               <Button
                 icon={<ArrowLeftOutlined />}
-                type="text"
-                shape="circle"
-                onClick={onBack} // Kembali ke daftar kontak
+                type='text'
+                shape='circle'
+                onClick={onBack}
               />
             )}
-            <Avatar src={contact.avatar} size="large" />
+            <Avatar src={contact.avatar} size='large' />
             <Flex vertical>
               <Text strong>{contact.name}</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type='secondary' style={{ fontSize: 12 }}>
                 {contact.isLogin ? "Online" : "Offline"}
               </Text>
             </Flex>
@@ -85,8 +113,8 @@ const ChatWindow = ({
           {/* Badan Chat (Pesan) */}
           <Flex
             vertical
-            gap="middle"
-            ref={chatBodyRef} // <--- Ref tetap terpasang di sini
+            gap='middle'
+            ref={chatBodyRef}
             style={{
               flex: 1,
               overflowY: "auto",
@@ -94,14 +122,14 @@ const ChatWindow = ({
               background: "#f9f9f9",
             }}
           >
-            {/* ... (Sisa kode render pesan tidak berubah) ... */}
+            {/* ... (Logika Loading/Error tidak berubah) ... */}
             {isLoading ? (
-              <Flex align="center" justify="center" style={{ height: "100%" }}>
+              <Flex align='center' justify='center' style={{ height: "100%" }}>
                 <Typography.Text>Loading messages...</Typography.Text>
               </Flex>
             ) : isError ? (
-              <Flex align="center" justify="center" style={{ height: "100%" }}>
-                <Typography.Text type="danger">
+              <Flex align='center' justify='center' style={{ height: "100%" }}>
+                <Typography.Text type='danger'>
                   Failed to load messages.
                 </Typography.Text>
               </Flex>
@@ -109,16 +137,15 @@ const ChatWindow = ({
               (messages || []).map((msg) => (
                 <Flex
                   key={msg._id}
-                  // 'justify' untuk memisahkan pesan 'me' dan 'other'
                   justify={
                     msg.sender._id === user._id ? "flex-end" : "flex-start"
                   }
-                  gap="small"
-                  align="flex-end"
+                  gap='small'
+                  align='flex-end'
                 >
                   {/* Tampilkan avatar 'other' */}
                   {msg.sender._id !== user._id && (
-                    <Avatar src={contact.avatar} size="small" />
+                    <Avatar src={contact.avatar} size='small' />
                   )}
 
                   <Flex
@@ -127,7 +154,7 @@ const ChatWindow = ({
                       msg.sender._id === user._id ? "flex-end" : "flex-start"
                     }
                   >
-                    {/* Bubble Chat */}
+                    {/* Bubble Chat (Tidak berubah) */}
                     <div
                       style={{
                         background:
@@ -135,7 +162,7 @@ const ChatWindow = ({
                         color: msg.sender._id === user._id ? "#fff" : "#000",
                         padding: "8px 12px",
                         borderRadius: "18px",
-                        maxWidth: "300px", // Batas lebar bubble
+                        maxWidth: "300px",
                       }}
                     >
                       <Text
@@ -144,30 +171,50 @@ const ChatWindow = ({
                         {msg.content}
                       </Text>
                     </div>
-                    {/* Timestamp */}
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: 10, marginTop: 4 }}
+
+                    {/* --- 2. PERUBAHAN DI SINI: BUNGKUS TIMESTAMP DAN IKON --- */}
+                    <Flex
+                      align='center'
+                      gap={4}
+                      style={{ marginTop: 4 }}
+                      // Posisikan di kanan jika itu pesan kita
+                      justify={
+                        msg.sender._id === user._id ? "flex-end" : "flex-start"
+                      }
                     >
-                      {new Date(msg.createdAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
+                      {/* Timestamp */}
+                      <Text type='secondary' style={{ fontSize: 10 }}>
+                        {new Date(msg.createdAt).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+
+                      {/* --- 3. TAMBAHKAN IKON READ RECEIPT --- */}
+                      {/* Tampilkan ikon HANYA jika pesan ini dari kita (user) */}
+                      {msg.sender._id === user._id &&
+                        (msg.readBy?.includes(contact?.id) ? (
+                          <CheckCircleFilled style={{ color: "green" }} />
+                        ) : (
+                          <CheckCircleOutlined />
+                        ))}
+                      {/* --- AKHIR TAMBAHAN IKON --- */}
+                    </Flex>
+                    {/* --- AKHIR PERUBAHAN --- */}
                   </Flex>
 
                   {/* Tampilkan avatar 'me' */}
                   {msg.sender._id === user._id && (
-                    <Avatar src={user.avatar} size="small" />
+                    <Avatar src={user.avatar} size='small' />
                   )}
                 </Flex>
               ))
             )}
           </Flex>
 
-          {/* Input Chat */}
+          {/* Input Chat (Tidak berubah) */}
           <Flex
-            gap="middle"
+            gap='middle'
             style={{
               padding: "16px",
               borderTop: "1px solid #f0f0f0",
@@ -175,20 +222,19 @@ const ChatWindow = ({
             }}
           >
             <Input.TextArea
-              placeholder="Type a message..."
+              placeholder='Type a message...'
               value={currentMessage}
               onChange={(e) => onCurrentMessageChange(e.target.value)}
               onPressEnter={(e) => {
-                // Kirim jika menekan Enter (tanpa Shift)
                 if (!e.shiftKey) {
                   e.preventDefault();
                   onSendMessage();
                 }
               }}
-              autoSize={{ minRows: 1, maxRows: 4 }} // Input bisa membesar
+              autoSize={{ minRows: 1, maxRows: 4 }}
             />
             <Button
-              type="primary"
+              type='primary'
               icon={<SendOutlined />}
               onClick={onSendMessage}
               disabled={!currentMessage.trim() || isSending}
@@ -197,9 +243,9 @@ const ChatWindow = ({
           </Flex>
         </>
       ) : (
-        // Tampilan jika belum ada chat dipilih (hanya di desktop)
-        <Flex align="center" justify="center" style={{ height: "100%" }}>
-          <Empty description="Select a contact to start chatting" />
+        // Tampilan jika belum ada chat dipilih (Tidak berubah)
+        <Flex align='center' justify='center' style={{ height: "100%" }}>
+          <Empty description='Select a contact to start chatting' />
         </Flex>
       )}
     </Flex>

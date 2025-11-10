@@ -59,8 +59,27 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("disconnect", async () => {
-    console.log("user disconnected");
+  socket.on("disconnecting", async () => {
+    if (socket.userId) {
+      const room = io.sockets.adapter.rooms.get(socket.userId);
+      if (room && room.size === 1) {
+        await User.findByIdAndUpdate(socket.userId, {
+          isLogin: false,
+          lastSeen: new Date(),
+        });
+
+        const user = await User.findById(socket.userId).select("friends");
+        if (user && user.friends) {
+          user.friends.forEach((friendId) => {
+            io.to(friendId.toString()).emit("status");
+          });
+        }
+      }
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`user ${socket.id} disconnected`);
   });
 });
 

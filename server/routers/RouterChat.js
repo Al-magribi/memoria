@@ -11,14 +11,20 @@ router.get("/get-my-friends", verify(), async (req, res) => {
     const { search } = req.query;
 
     // 1. Siapkan kondisi 'match' untuk populate
-    // Ini adalah filter yang akan diterapkan PADA koleksi 'User' (teman)
     const matchQuery = {};
     if (search) {
       const searchRegex = new RegExp(search, "i"); // 'i' = case-insensitive
 
-      // Kita tidak bisa mencari 'fullName' virtual,
-      // jadi kita cari di field yang menyusunnya:
-      matchQuery.$or = [{ firstName: searchRegex }, { lastName: searchRegex }];
+      // --- PERUBAIKAN DI SINI ---
+      // Kita tidak bisa mencari di 'fullName' virtual.
+      // Gunakan $expr untuk membuat field gabungan saat runtime dan cari di sana.
+      matchQuery.$expr = {
+        $regexMatch: {
+          input: { $concat: ["$firstName", " ", "$lastName"] }, // Membuat "Firstname Lastname"
+          regex: searchRegex, // Mencocokkan dengan "Al Magribi", dll.
+        },
+      };
+      // --- AKHIR PERUBAIKAN ---
     }
 
     // 2. Ambil data user dan populate 'friends' menggunakan 'match'
@@ -26,11 +32,8 @@ router.get("/get-my-friends", verify(), async (req, res) => {
       path: "friends",
       // Terapkan filter pencarian pada teman
       match: matchQuery,
-      // Pilih field teman yang ingin dikembalikan
-      // (Saya ganti 'username' dari kode Anda dengan 'avatar' sesuai skema)
+      // (Kode select dan options Anda lainnya tidak berubah)
       select: "firstName lastName isLogin avatar",
-      // Anda juga bisa menambahkan limit/skip di sini jika perlu
-      // options: { limit: 10, skip: 0 }
     });
 
     if (!user) {
@@ -38,32 +41,187 @@ router.get("/get-my-friends", verify(), async (req, res) => {
     }
 
     // 3. Kembalikan HANYA array teman yang sudah difilter
-    // 'user.friends' sekarang hanya akan berisi teman yang cocok
-    // dengan 'searchQuery'.
     res.status(200).json(user.friends);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
   }
 });
-// Get conversations
+
+// Get conversations (FIXED: Inclusion/Exclusion $project Error)
 router.get("/get-conversations", verify(), async (req, res) => {
   try {
-    const conversation = await Conversation.find({ participants: req.user._id })
-      .populate("participants", "firstName lastName fullName isLogin avatar") // Ambil data partisipan
-      .populate({
-        path: "lastMessage", // Ambil data pesan terakhir
-        select: "content sender timestamp",
-        populate: {
-          path: "sender",
-          select: "firstName lastName fullName",
-        }, // Ambil data pengirim pesan terakhir
-      })
-      .sort({ updatedAt: -1 }); // Urutkan berdasarkan yang terbaru
+    const userId = req.user._id;
+    const { search } = req.query;
 
-    res.status(200).json(conversation);
+    // Salin pipeline asli Anda
+    const pipeline = [
+      // 1. Match conversations
+      {
+        $match: { participants: userId },
+      },
+      // 2. Sort
+      {
+        $sort: { updatedAt: -1 },
+      },
+      // 3. Lookup unread
+      {
+        $lookup: {
+          from: "chats",
+          let: { conversationId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$conversation", "$$conversationId"] },
+                    { $ne: ["$sender", userId] },
+                    { $not: { $in: [userId, "$readBy"] } },
+                  ],
+                },
+              },
+            },
+            { $count: "count" },
+          ],
+          as: "unreadInfo",
+        },
+      },
+      // 4. Calculate unread count
+      {
+        $addFields: {
+          unreadCount: { $ifNull: [{ $first: "$unreadInfo.count" }, 0] },
+        },
+      },
+      // 5. Populate lastMessage
+      {
+        $lookup: {
+          from: "chats",
+          localField: "lastMessage",
+          foreignField: "_id",
+          as: "lastMessage",
+        },
+      },
+      {
+        $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true },
+      },
+      // 6. Populate sender of lastMessage
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastMessage.sender",
+          foreignField: "_id",
+          as: "lastMessage.sender",
+        },
+      },
+      {
+        $unwind: {
+          path: "$lastMessage.sender",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // 7. Populate participants
+      {
+        $lookup: {
+          from: "users",
+          localField: "participants",
+          foreignField: "_id",
+          as: "participants",
+        },
+      },
+      // (Logika Search akan disisipkan di sini)
+
+      // 8. Project the final fields (Simpan di variabel, JANGAN langsung push)
+      // Ini adalah $project ASLI Anda
+      {
+        $project: {
+          _id: 1,
+          participants: {
+            _id: 1,
+            firstName: 1,
+            lastName: 1,
+            fullName: 1,
+            isLogin: 1,
+            avatar: 1,
+          },
+          lastMessage: {
+            _id: 1,
+            content: 1,
+            sender: {
+              _id: 1,
+              firstName: 1,
+              lastName: 1,
+              fullName: 1,
+            },
+            createdAt: 1,
+            readBy: 1,
+          },
+          updatedAt: 1,
+          unreadCount: 1,
+        },
+      },
+    ];
+
+    // --- 2. LOGIKA SEARCH BARU (PERBAIKAN) ---
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+
+      // Stage A: $addFields (Sama seperti sebelumnya)
+      const addFieldsStage = {
+        $addFields: {
+          matchingParticipants: {
+            $filter: {
+              input: "$participants",
+              as: "p",
+              cond: {
+                $and: [
+                  { $ne: ["$$p._id", userId] },
+                  {
+                    $regexMatch: {
+                      input: {
+                        $concat: ["$$p.firstName", " ", "$$p.lastName"],
+                      },
+                      regex: searchRegex,
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+
+      // Stage B: $match (Sama seperti sebelumnya)
+      const matchStage = {
+        $match: {
+          $expr: {
+            $gt: [{ $size: "$matchingParticipants" }, 0],
+          },
+        },
+      };
+
+      // Stage C: $unset (INI PERBAIKANNYA)
+      // Hapus field sementara 'matchingParticipants'
+      const unsetStage = {
+        $unset: "matchingParticipants",
+      };
+
+      // Sisipkan SEMUA stage baru SEBELUM $project terakhir
+      pipeline.splice(
+        pipeline.length - 1, // Ambil posisi $project (item terakhir)
+        0, // Jangan hapus $project
+        addFieldsStage, // Sisipkan $addFields
+        matchStage, // Sisipkan $match
+        unsetStage // <-- Sisipkan $unset untuk menghapus field temp
+      );
+    }
+    // --- AKHIR LOGIKA SEARCH BARU ---
+
+    // 3. Jalankan agregasi
+    const conversations = await Conversation.aggregate(pipeline);
+
+    res.status(200).json(conversations);
   } catch (error) {
-    console.log(error);
+    console.log(error); // Tampilkan error yang sebenarnya
     res.status(500).json({ message: error.message });
   }
 });
@@ -87,10 +245,65 @@ router.get("/get-chats/:conversationId", verify(), async (req, res) => {
     const messages = await Chat.find({
       conversation: conversationId,
     })
-      .populate("sender", "firstName lastName avatar") // Ambil data pengirim
+      .populate("sender", "firstName lastName fullName avatar") // Ambil data pengirim
       .sort({ createdAt: "asc" }); // Urutkan dari yang terlama
 
     res.status(200).json(messages);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark messages as read in a conversation
+router.post("/mark-as-read/:conversationId", verify(), async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    // 1. Verifikasi bahwa user adalah bagian dari percakapan ini
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: userId,
+    });
+
+    if (!conversation) {
+      return res
+        .status(403)
+        .json({ message: "You are not a participant in this conversation." });
+    }
+
+    // 2. Update semua pesan dalam percakapan ini
+    // Tambahkan `userId` ke `readBy` jika belum ada
+    const result = await Chat.updateMany(
+      {
+        conversation: conversationId,
+        sender: { $ne: userId }, // Jangan tandai pesan sendiri sebagai 'dibaca'
+        readBy: { $ne: userId }, // Hanya update jika user belum membacanya
+      },
+      {
+        $addToSet: { readBy: userId }, // $addToSet mencegah duplikat
+      }
+    );
+
+    // 3. [SOCKET.IO] Beri tahu partisipan lain bahwa pesan telah dibaca
+    const io = req.io;
+    if (io) {
+      conversation.participants.forEach((participant) => {
+        // Kirim ke semua partisipan KECUALI diri sendiri
+        if (participant.toString() !== userId.toString()) {
+          io.to(participant.toString()).emit("messagesRead", {
+            conversationId: conversationId,
+            readBy: userId,
+          });
+        }
+      });
+    }
+
+    res.status(200).json({
+      message: `Successfully marked messages as read.`,
+      modifiedCount: result.modifiedCount,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
@@ -102,8 +315,6 @@ router.post("/create-chat", verify(), async (req, res) => {
   try {
     const { receiverId, content } = req.body;
     const senderId = req.user._id;
-
-    console.log(req.body);
 
     if (!receiverId || !content) {
       return res.status(400).json({ message: "Missing receiverId or content" });
