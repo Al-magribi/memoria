@@ -1,4 +1,14 @@
-import { Input, Avatar, Flex, Button, Grid, Tabs, Space, message } from "antd";
+import {
+  Input,
+  Avatar,
+  Flex,
+  Button,
+  Grid,
+  Tabs,
+  Space,
+  message,
+  Badge,
+} from "antd";
 import {
   MessageFilled,
   SearchOutlined,
@@ -12,14 +22,20 @@ import { useNavigate } from "react-router-dom";
 import Notif from "./Notif";
 import { useLogoutMutation } from "../../service/user/ApiUser";
 import { useEffect } from "react";
+import { useGetUnreadQuery } from "../../service/chat/ApiChat";
+import { useSocket } from "../../context/SocketContext";
 
 const { useBreakpoint } = Grid;
 
 const Navbar = ({ activeTab, onChange, user }) => {
+  const socket = useSocket();
+
   const navigate = useNavigate();
   const screens = useBreakpoint();
 
   const [logout, { isSuccess, data }] = useLogoutMutation();
+
+  const { data: unread, refetch } = useGetUnreadQuery();
 
   const items = [
     { label: "Feeds", key: "1", icon: <HomeOutlined /> },
@@ -36,6 +52,22 @@ const Navbar = ({ activeTab, onChange, user }) => {
       window.location.href = "/signin";
     }
   }, [isSuccess, data]);
+
+  useEffect(() => {
+    if (socket) {
+      const handleRefetch = () => {
+        refetch();
+      };
+
+      socket.on("newChat", handleRefetch);
+      socket.on("messagesRead", handleRefetch);
+
+      return () => {
+        socket.on("newChat", handleRefetch);
+        socket.on("messagesRead", handleRefetch);
+      };
+    }
+  }, [socket, refetch]);
 
   return (
     <div
@@ -104,12 +136,14 @@ const Navbar = ({ activeTab, onChange, user }) => {
           justify="center"
           style={{ width: "285px" }}
         >
-          <Button
-            shape="circle"
-            size="large"
-            icon={<MessageFilled />}
-            onClick={() => navigate("/chat")}
-          />
+          <Badge count={unread?.totalUnreadCount || 0}>
+            <Button
+              shape="circle"
+              size="large"
+              icon={<MessageFilled />}
+              onClick={() => navigate("/chat")}
+            />
+          </Badge>
 
           <Notif user={user} />
 

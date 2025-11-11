@@ -1,34 +1,36 @@
-// src/components/right/ChatManager.jsx (Versi Perbaikan Final)
-
 import React, { useState } from "react";
 import ContactList from "./ContactList";
-import ChatWindow from "./ChatWindow";
+import ChatWindow from "./ChatWindow"; // Kita akan gunakan ChatWindow yang sudah di-upgrade
 import "./Chat.css";
 
 const ChatManager = () => {
   const [openChats, setOpenChats] = useState([]);
 
   const handleContactClick = (user) => {
-    // Cek jika chat sudah dibuka, jangan tambahkan lagi
-    if (!openChats.some((chat) => chat.id === user.id)) {
+    // Gunakan _id dari MongoDB, bukan id
+    if (!openChats.some((chat) => chat._id === user._id)) {
       setOpenChats((prevChats) => [...prevChats, user]);
     }
   };
 
   const handleCloseChat = (userId) => {
-    setOpenChats((prevChats) => prevChats.filter((chat) => chat.id !== userId));
+    // Pastikan kita memfilter berdasarkan _id
+    setOpenChats((prevChats) =>
+      prevChats.filter((chat) => chat._id !== userId)
+    );
   };
 
   return (
     <>
+      {/* ContactList akan memanggil handleContactClick dengan objek user */}
       <ContactList onContactClick={handleContactClick} />
 
-      <div className='active-chats-container'>
+      <div className="active-chats-container">
         {openChats.map((user) => (
           <ChatWindow
-            key={user.id}
-            user={user}
-            onClose={() => handleCloseChat(user.id)}
+            key={user._id} // Gunakan _id sebagai key
+            user={user} // Kirim seluruh objek user (teman)
+            onClose={() => handleCloseChat(user._id)}
           />
         ))}
       </div>

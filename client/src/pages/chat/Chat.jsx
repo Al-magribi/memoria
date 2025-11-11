@@ -8,6 +8,7 @@ import {
   useGetConversationsQuery, // <-- Akan dimodifikasi
   useCreateChatMutation,
   useGetMyFriendsQuery,
+  useGetUnreadQuery,
 } from "../../service/chat/ApiChat";
 import { useSelector } from "react-redux";
 import { useSocket } from "../../context/SocketContext";
@@ -41,11 +42,28 @@ const Chat = () => {
     { skip: false }
   );
 
+  const {
+    data: unread,
+    isLoading: isLoadingUnread,
+    refetch: refetchUnread,
+  } = useGetUnreadQuery();
   // --- 2. LOGIKA MEMO (Tidak ada filter client-side) ---
 
   // MEMO 1: Daftar untuk tab "Chats"
   // 'conversations' SUDAH difilter oleh server
   const conversationContacts = useMemo(() => {
+    // Buat map dari notifikasi untuk pencarian cepat (contactId -> unreadCount)
+    const unreadMap = (unread?.unreadConversations || []).reduce(
+      (map, item) => {
+        // ID partisipan lawan adalah kunci (yang ditampilkan di list)
+        if (item.participant?._id) {
+          map[item.participant._id] = item.unreadCount;
+        }
+        return map;
+      },
+      {}
+    );
+
     return (conversations || [])
       .map((convo) => {
         const other = convo.participants.find((p) => p._id !== user._id);
@@ -57,10 +75,11 @@ const Chat = () => {
           avatar: other.avatar,
           lastMessage: convo.lastMessage,
           isLogin: other.isLogin,
+          unreadCount: unreadMap[other._id] || 0,
         };
       })
       .filter(Boolean);
-  }, [conversations, user]); // Hanya bergantung pada 'conversations'
+  }, [conversations, user, unread]); // Hanya bergantung pada 'conversations'
 
   // MEMO 2: Daftar untuk tab "Contact"
   // 'myFriends' SUDAH difilter oleh server
@@ -129,13 +148,25 @@ const Chat = () => {
     if (socket) {
       const handleNewChat = () => {
         refetch();
+        refetchUnread();
       };
+
+      const handleMessagesRead = (data) => {
+        // Jika ada pesan yang ditandai dibaca, kita juga harus refetch notifikasi
+        if (data.readBy.toString() !== user._id.toString()) {
+          refetchUnread(); // <-- TAMBAHAN: Refetch notifikasi
+        }
+      };
+
       socket.on("newChat", handleNewChat);
+      socket.on("messagesRead", handleMessagesRead);
+
       return () => {
         socket.off("newChat", handleNewChat);
+        socket.off("messagesRead", handleMessagesRead);
       };
     }
-  }, [refetch, socket]);
+  }, [refetch, socket, refetchUnread, user]);
 
   // --- 6. Render (Tidak Berubah) ---
   return (

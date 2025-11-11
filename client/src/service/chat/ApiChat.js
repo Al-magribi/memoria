@@ -42,6 +42,10 @@ export const ApiChat = createApi({
       }),
       invalidatesTags: ["Conversations", "Chats"],
     }),
+    getUnread: builder.query({
+      query: () => "/get-unread-chats",
+      providesTags: ["Conversations"],
+    }),
   }),
 });
 
@@ -51,4 +55,5 @@ export const {
   useGetChatsQuery,
   useCreateChatMutation,
   useMarkAsReadMutation,
+  useGetUnreadQuery,
 } = ApiChat;
