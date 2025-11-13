@@ -56,17 +56,30 @@ const ReelSchema = new mongoose.Schema(
 
 // Virtual property for like count
 ReelSchema.virtual("likeCount").get(function () {
-  return this.likes.length;
+  // --- PERUBAHAN DI SINI ---
+  // Tambahkan pengecekan untuk memastikan 'this.likes' ada
+  return this.likes ? this.likes.length : 0;
 });
 
 // Virtual property for comment count
 ReelSchema.virtual("commentCount").get(function () {
-  // This is a simplistic count. A more accurate count would recursively sum all replies.
+  // --- PERUBAHAN DI SINI ---
+  // Tambahkan pengecekan untuk memastikan 'this.comments' ada
+  if (!this.comments) {
+    return 0;
+  }
+  // --- PERUBAHAN SELESAI ---
+
   let count = this.comments.length;
   this.comments.forEach((comment) => {
     const countReplies = (c) => {
-      count += c.replies.length;
-      c.replies.forEach(countReplies);
+      // --- PERUBAHAN DI SINI ---
+      // Juga tambahkan pengecekan di rekursif
+      if (c.replies) {
+        count += c.replies.length;
+        c.replies.forEach(countReplies);
+      }
+      // --- PERUBAHAN SELESAI ---
     };
     countReplies(comment);
   });

@@ -17,7 +17,7 @@ const { Footer, Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
 // Terima 'activeTab' dan 'onTabChange' dari props
-const MainLayout = ({ children, activeTab, onTabChange }) => {
+const MainLayout = ({ children, activeTab, onTabChange, setSearchTerm }) => {
   const navigate = useNavigate();
 
   const { user, isLoading } = useSelector((state) => state.user);
@@ -57,25 +57,30 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
     <Layout>
       <Header style={headerStyle}>
         {/* Gunakan props yang diterima untuk Navbar */}
-        <Navbar activeTab={activeTab} onChange={onTabChange} user={user} />
+        <Navbar
+          activeTab={activeTab}
+          onChange={onTabChange}
+          user={user}
+          setSearchTerm={setSearchTerm}
+        />
       </Header>
 
       <Layout style={{ paddingTop: 56, marginBottom: !screens.md ? 100 : 0 }}>
         {/* SIDER KIRI */}
         {screens.lg && (
-          <Sider width={300} style={columnStyle} className="hide-scrollbar">
+          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
             <Left user={user} isLoading={isLoading} />
           </Sider>
         )}
 
         {/* KONTEN UTAMA */}
-        <Content style={contentStyle} className="hide-scrollbar">
+        <Content style={contentStyle} className='hide-scrollbar'>
           {children}
         </Content>
 
         {/* SIDER KANAN */}
         {screens.md && (
-          <Sider width={300} style={columnStyle} className="hide-scrollbar">
+          <Sider width={300} style={columnStyle} className='hide-scrollbar'>
             <ChatManager />
           </Sider>
         )}
@@ -98,8 +103,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
           <Row gutter={[16, 26]}>
             <Col xs={6}>
               <Space
-                direction="vertical"
-                align="center"
+                direction='vertical'
+                align='center'
                 style={{ width: "100%", cursor: "pointer" }}
                 onClick={() => onTabChange("1")} // Gunakan 'onTabChange' dari props
               >
@@ -110,8 +115,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
             <Col xs={6}>
               <Space
-                direction="vertical"
-                align="center"
+                direction='vertical'
+                align='center'
                 style={{ width: "100%" }}
                 onClick={() => onTabChange("2")} // Gunakan 'onTabChange' dari props
               >
@@ -123,8 +128,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
             <Col xs={6}>
               <Badge count={unread?.totalUnreadCount}>
                 <Space
-                  direction="vertical"
-                  align="center"
+                  direction='vertical'
+                  align='center'
                   style={{ width: "100%" }}
                   onClick={() => navigate("/chat")}
                 >
@@ -136,8 +141,8 @@ const MainLayout = ({ children, activeTab, onTabChange }) => {
 
             <Col xs={6}>
               <Space
-                direction="vertical"
-                align="center"
+                direction='vertical'
+                align='center'
                 style={{ width: "100%" }}
                 onClick={() => navigate(`/${user?.fullName}`)}
               >

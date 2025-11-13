@@ -21,17 +21,19 @@ import {
 import { useNavigate } from "react-router-dom";
 import Notif from "./Notif";
 import { useLogoutMutation } from "../../service/user/ApiUser";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGetUnreadQuery } from "../../service/chat/ApiChat";
 import { useSocket } from "../../context/SocketContext";
 
 const { useBreakpoint } = Grid;
 
-const Navbar = ({ activeTab, onChange, user }) => {
+const Navbar = ({ activeTab, onChange, user, setSearchTerm }) => {
   const socket = useSocket();
 
   const navigate = useNavigate();
   const screens = useBreakpoint();
+
+  const [search, setSearch] = useState("");
 
   const [logout, { isSuccess, data }] = useLogoutMutation();
 
@@ -45,6 +47,14 @@ const Navbar = ({ activeTab, onChange, user }) => {
   const handleLogout = () => {
     logout();
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(search);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [setSearchTerm, search]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -80,27 +90,29 @@ const Navbar = ({ activeTab, onChange, user }) => {
     >
       {/* Header Bagian Kiri: Logo & Search */}
       <Flex
-        gap="middle"
-        align="center"
+        gap='middle'
+        align='center'
         style={{ width: !screens.md ? "100%" : "285px" }}
       >
         <img
-          src="/logo.png"
-          alt="almadev"
+          src='/logo.png'
+          alt='almadev'
           style={{ width: "35px", borderRadius: "50%" }}
         />
 
         <Input
           prefix={<SearchOutlined />}
-          placeholder="Cari apapun ..."
+          placeholder='Cari apapun ...'
           style={{ borderRadius: "20px" }}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
         {!screens.md && (
           <Space>
             <Button
-              shape="circle"
-              size="large"
+              shape='circle'
+              size='large'
               icon={<UsergroupAddOutlined />}
               onClick={() => navigate("/friends")}
             />
@@ -108,8 +120,8 @@ const Navbar = ({ activeTab, onChange, user }) => {
             <Notif user={user} />
 
             <Button
-              shape="circle"
-              size="large"
+              shape='circle'
+              size='large'
               danger
               icon={<LogoutOutlined />}
               onClick={handleLogout}
@@ -131,15 +143,15 @@ const Navbar = ({ activeTab, onChange, user }) => {
       {/* Tampilkan hanya di layar 'md' ke atas */}
       {screens.md && (
         <Flex
-          gap="middle"
-          align="center"
-          justify="center"
+          gap='middle'
+          align='center'
+          justify='center'
           style={{ width: "285px" }}
         >
           <Badge count={unread?.totalUnreadCount || 0}>
             <Button
-              shape="circle"
-              size="large"
+              shape='circle'
+              size='large'
               icon={<MessageFilled />}
               onClick={() => navigate("/chat")}
             />
@@ -148,7 +160,7 @@ const Navbar = ({ activeTab, onChange, user }) => {
           <Notif user={user} />
 
           <Avatar
-            size="large"
+            size='large'
             icon={<UserOutlined />}
             src={user?.avatar}
             onClick={() => navigate(`/${user?.fullName}`)}

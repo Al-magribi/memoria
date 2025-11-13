@@ -102,6 +102,14 @@ export const ApiUser = createApi({
       },
       invalidatesTags: ["User"],
     }),
+    getAnything: builder.query({
+      query: ({ search }) => ({
+        url: `/anything`,
+        method: "GET",
+        params: { search },
+      }),
+      providesTags: ["User"],
+    }),
   }),
 });
 
@@ -117,4 +125,5 @@ export const {
   useUpdatePrivacyMutation,
   useUpdateDetailsMutation,
   useUploadProfileImagesMutation,
+  useGetAnythingQuery,
 } = ApiUser;

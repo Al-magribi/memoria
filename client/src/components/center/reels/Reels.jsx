@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Flex, Avatar, Typography, Button, Spin, Empty, Grid } from "antd";
 import {
   HeartOutlined,
@@ -13,7 +13,7 @@ import {
   useCreateReelMutation,
 } from "../../../service/reel/ApiReel";
 
-const { Text, Paragraph } = Typography;
+const { Text, Paragraph, Title } = Typography;
 const { useBreakpoint } = Grid;
 
 const videoStyle = {
@@ -49,8 +49,8 @@ const Reels = () => {
     borderRadius: "16px",
     overflow: "hidden",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    scrollSnapAlign: "center", // <-- TAMBAHKAN INI
-    flexShrink: 0, // <-- TAMBAHKAN INI (mencegah flex-shrink)
+    scrollSnapAlign: "center",
+    flexShrink: 0,
   };
 
   const [reel, setReel] = useState("");
@@ -61,8 +61,6 @@ const Reels = () => {
 
   const { data: reels, isLoading } = useGetReelsQuery();
   const [createReel, { isLoading: isSubmitting }] = useCreateReelMutation();
-
-  console.log(reels);
 
   const handleOpen = (reel) => {
     setReel(reel);
@@ -99,6 +97,95 @@ const Reels = () => {
     setCaption("");
   };
 
+  const renderReels = () => {
+    if (isLoading) return <Spin size='large' />;
+
+    return reels.map((reel) => (
+      <div key={reel._id} style={reelContainerStyle}>
+        <video
+          src={reel.video}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={videoStyle}
+        />
+        <Flex vertical justify='flex-end' style={overlayStyle}>
+          <Flex
+            align='flex-end'
+            justify='space-between'
+            style={bottomOverlayStyle}
+          >
+            <Flex vertical gap='small' style={{ flex: 1, marginRight: "16px" }}>
+              <Flex align='center' gap={8}>
+                <Avatar src={reel.user.avatar} size={40} />
+                <Text strong style={{ color: "#fff", fontSize: "16px" }}>
+                  {reel.user.fullName}
+                </Text>
+              </Flex>
+              <Paragraph
+                ellipsis={{ rows: 2, expandable: true, symbol: "more" }}
+                style={{
+                  color: "#fff",
+                  marginBottom: 0,
+                  fontSize: "14px",
+                }}
+              >
+                {reel.caption}
+              </Paragraph>
+            </Flex>
+            <Flex vertical gap='middle' align='center'>
+              <Flex vertical align='center'>
+                <Button
+                  type='text'
+                  shape='circle'
+                  icon={
+                    <HeartOutlined
+                      style={{ color: "#fff", fontSize: "28px" }}
+                    />
+                  }
+                  style={{ height: "48px", width: "48px" }}
+                />
+                <Text style={{ color: "#fff", fontSize: "12px" }}>
+                  {reel.likes.length}
+                </Text>
+              </Flex>
+              <Flex vertical align='center'>
+                <Button
+                  type='text'
+                  shape='circle'
+                  icon={
+                    <MessageOutlined
+                      style={{ color: "#fff", fontSize: "28px" }}
+                    />
+                  }
+                  style={{ height: "48px", width: "48px" }}
+                  onClick={() => handleOpen(reel)}
+                />
+                <Text style={{ color: "#fff", fontSize: "12px" }}>
+                  {reel.comments.length}
+                </Text>
+              </Flex>
+              <Flex vertical align='center'>
+                <Button
+                  type='text'
+                  shape='circle'
+                  icon={
+                    <ShareAltOutlined
+                      style={{ color: "#fff", fontSize: "28px" }}
+                    />
+                  }
+                  style={{ height: "48px", width: "48px" }}
+                />
+                <Text style={{ color: "#fff", fontSize: "12px" }}>Bagikan</Text>
+              </Flex>
+            </Flex>
+          </Flex>
+        </Flex>
+      </div>
+    ));
+  };
+
   return (
     <Flex
       direction='row'
@@ -128,119 +215,21 @@ const Reels = () => {
         setCaption={setCaption}
       />
 
-      {/* Container Flex vertikal untuk menampung list reel */}
       <Flex
         vertical
         gap='large'
         align='center'
         style={{
-          height: "100%", // Mengisi tinggi parent
-          overflowY: "auto", // Membuat list reel bisa di-scroll
-          padding: "8px", // Padding agar scrollbar tidak menempel
+          height: "100%",
+          overflowY: "auto",
+          padding: "8px",
           position: "relative",
         }}
         className='hide-scrollbar'
       >
-        {isLoading ? (
-          <Spin size='large' />
-        ) : reels && reels.length > 0 ? (
-          reels.map((reel) => (
-            // Setiap div ini sekarang adalah "snap point"
-            <div key={reel._id} style={reelContainerStyle}>
-              <video
-                src={reel.video}
-                autoPlay
-                muted
-                loop
-                playsInline
-                style={videoStyle}
-              />
-              <Flex vertical justify='flex-end' style={overlayStyle}>
-                <Flex
-                  align='flex-end'
-                  justify='space-between'
-                  style={bottomOverlayStyle}
-                >
-                  <Flex
-                    vertical
-                    gap='small'
-                    style={{ flex: 1, marginRight: "16px" }}
-                  >
-                    <Flex align='center' gap={8}>
-                      <Avatar src={reel.user.avatar} size={40} />
-                      <Text strong style={{ color: "#fff", fontSize: "16px" }}>
-                        {reel.user.fullName}
-                      </Text>
-                    </Flex>
-                    <Paragraph
-                      ellipsis={{ rows: 2, expandable: true, symbol: "more" }}
-                      style={{
-                        color: "#fff",
-                        marginBottom: 0,
-                        fontSize: "14px",
-                      }}
-                    >
-                      {reel.caption}
-                    </Paragraph>
-                  </Flex>
-                  <Flex vertical gap='middle' align='center'>
-                    <Flex vertical align='center'>
-                      <Button
-                        type='text'
-                        shape='circle'
-                        icon={
-                          <HeartOutlined
-                            style={{ color: "#fff", fontSize: "28px" }}
-                          />
-                        }
-                        style={{ height: "48px", width: "48px" }}
-                      />
-                      <Text style={{ color: "#fff", fontSize: "12px" }}>
-                        {reel.likes.length}
-                      </Text>
-                    </Flex>
-                    <Flex vertical align='center'>
-                      <Button
-                        type='text'
-                        shape='circle'
-                        icon={
-                          <MessageOutlined
-                            style={{ color: "#fff", fontSize: "28px" }}
-                          />
-                        }
-                        style={{ height: "48px", width: "48px" }}
-                        onClick={() => handleOpen(reel)}
-                      />
-                      <Text style={{ color: "#fff", fontSize: "12px" }}>
-                        {reel.comments.length}
-                      </Text>
-                    </Flex>
-                    <Flex vertical align='center'>
-                      <Button
-                        type='text'
-                        shape='circle'
-                        icon={
-                          <ShareAltOutlined
-                            style={{ color: "#fff", fontSize: "28px" }}
-                          />
-                        }
-                        style={{ height: "48px", width: "48px" }}
-                      />
-                      <Text style={{ color: "#fff", fontSize: "12px" }}>
-                        Bagikan
-                      </Text>
-                    </Flex>
-                  </Flex>
-                </Flex>
-              </Flex>
-            </div>
-          ))
-        ) : (
-          <Empty description='No reels yet' />
-        )}
+        {renderReels()}
       </Flex>
 
-      {/* Tombol Create Reel (di luar container list) */}
       <Button
         onClick={showModal}
         shape='circle'
