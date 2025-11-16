@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Flex, Avatar, Typography, Button, Spin, Empty, Grid } from "antd";
 import {
   HeartOutlined,
@@ -12,6 +12,7 @@ import {
   useGetReelsQuery,
   useCreateReelMutation,
 } from "../../../service/reel/ApiReel";
+import { useSocket } from "../../../context/SocketContext";
 
 const { Text, Paragraph, Title } = Typography;
 const { useBreakpoint } = Grid;
@@ -38,6 +39,7 @@ const bottomOverlayStyle = {
 };
 
 const Reels = () => {
+  const socket = useSocket();
   const screens = useBreakpoint();
 
   const reelContainerStyle = {
@@ -59,7 +61,7 @@ const Reels = () => {
   const [video, setVideo] = useState(null);
   const [caption, setCaption] = useState("");
 
-  const { data: reels, isLoading } = useGetReelsQuery();
+  const { data: reels, isLoading, refetch } = useGetReelsQuery();
   const [createReel, { isLoading: isSubmitting }] = useCreateReelMutation();
 
   const handleOpen = (reel) => {
@@ -96,6 +98,20 @@ const Reels = () => {
     setVideo(null);
     setCaption("");
   };
+
+  useEffect(() => {
+    if (socket) {
+      const handler = () => {
+        refetch();
+      };
+
+      socket.on("reel", handler);
+
+      return () => {
+        socket.off("reel", handler);
+      };
+    }
+  }, [socket, refetch]);
 
   const renderReels = () => {
     if (isLoading) return <Spin size='large' />;
@@ -245,9 +261,7 @@ const Reels = () => {
         icon={<VideoCameraAddOutlined style={{ fontSize: "28px" }} />}
       />
 
-      {reel && (
-        <Comment open={open} comments={reel.comments} onClose={handleClose} />
-      )}
+      {reel && <Comment open={open} reel={reel} onClose={handleClose} />}
     </Flex>
   );
 };

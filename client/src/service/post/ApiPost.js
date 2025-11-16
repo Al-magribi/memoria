@@ -96,6 +96,13 @@ export const ApiPost = createApi({
       }),
       invalidatesTags: ["Posts"],
     }),
+    searchEverything: builder.query({
+      query: ({ search }) => ({
+        url: "/anything",
+        params: { search },
+      }),
+      providesTags: ["Posts"],
+    }),
   }),
 });
 
@@ -113,4 +120,5 @@ export const {
   useAddReplyMutation,
   useUpdateReplyMutation,
   useDeleteReplyMutation,
+  useSearchEverythingQuery,
 } = ApiPost;

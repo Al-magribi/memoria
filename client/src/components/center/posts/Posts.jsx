@@ -3,16 +3,15 @@ import PostCard from "./PostCard";
 import AddPost from "./AddPost";
 import { useGetFeedQuery } from "../../../service/post/ApiPost";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { useEffect, useMemo } from "react";
-import { io } from "socket.io-client";
 import { useSocket } from "../../../context/SocketContext";
 
 const { Title, Text } = Typography;
 
-const Posts = () => {
+const Posts = ({ results, searchTerm, isLoadingSearch }) => {
   const socket = useSocket();
-  const { user } = useSelector((state) => state.user);
+
+  // Ini adalah state untuk FEED UTAMA
   const { data: PostLists, isLoading, isError, refetch } = useGetFeedQuery();
   const navigate = useNavigate();
 
@@ -28,6 +27,44 @@ const Posts = () => {
   }, [socket, refetch]);
 
   const renderFeedContent = () => {
+    // --- JALUR 1: MODE PENCARIAN AKTIF ---
+    if (searchTerm) {
+      if (isLoadingSearch) {
+        return (
+          <Flex justify='center' align='center' style={{ minHeight: "200px" }}>
+            <Spin size='large' />
+          </Flex>
+        );
+      }
+
+      if (!results || results.length === 0) {
+        return (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Flex vertical align='center'>
+                <Title level={4}>No results found for "{searchTerm}"</Title>
+                <Text type='secondary'>
+                  Please try again with different keywords.
+                </Text>
+              </Flex>
+            }
+          />
+        );
+      }
+
+      // Tampilkan hasil pencarian
+      return (
+        <Flex vertical gap={"large"}>
+          {results.map((post, index) => (
+            <PostCard key={index} post={post} />
+          ))}
+        </Flex>
+      );
+    }
+
+    // --- JALUR 2: MODE FEED NORMAL (TIDAK ADA PENCARIAN) ---
+    // (Ini adalah logika asli Anda untuk feed)
     if (isLoading) {
       return (
         <Flex justify='center' align='center' style={{ minHeight: "200px" }}>
@@ -72,6 +109,7 @@ const Posts = () => {
       );
     }
 
+    // Tampilkan feed normal
     return (
       <Flex vertical gap={"large"}>
         {PostLists.map((post, index) => (

@@ -106,6 +106,7 @@ const Navbar = ({ activeTab, onChange, user, setSearchTerm }) => {
           style={{ borderRadius: "20px" }}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          allowClear
         />
 
         {!screens.md && (

@@ -3,7 +3,7 @@ import Posts from "./components/center/posts/Posts";
 import { useState, useEffect } from "react";
 import Reels from "./components/center/reels/Reels";
 import MainLayout from "./components/layout/MainLayout";
-import { useGetAnythingQuery } from "./service/user/ApiUser";
+import { useSearchEverythingQuery } from "./service/post/ApiPost";
 
 const { useBreakpoint } = Grid;
 
@@ -15,12 +15,10 @@ const Index = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data, isLoading } = useGetAnythingQuery(
+  const { data, isLoading } = useSearchEverythingQuery(
     { search: searchTerm },
     { skip: !searchTerm }
   );
-
-  console.log(data);
 
   useEffect(() => {
     localStorage.setItem("activeTab", activeTab);
@@ -56,7 +54,15 @@ const Index = () => {
           width: "100%",
         }}
       >
-        {activeTab === "1" ? <Posts /> : <Reels />}
+        {activeTab === "1" ? (
+          <Posts
+            results={data}
+            searchTerm={searchTerm}
+            isLoadingSearch={isLoading} // Kirim status loading pencarian
+          />
+        ) : (
+          <Reels />
+        )}
       </div>
     </MainLayout>
   );

@@ -20,12 +20,18 @@ export const ApiFriend = createApi({
       providesTags: ["Friends"],
     }),
     getMyFriends: builder.query({
-      query: () => "/get-my-friends",
+      query: ({ page = 1, limit = 8 }) => ({
+        url: "/get-my-friends",
+        params: { page, limit },
+      }),
       providesTags: ["Friends"],
     }),
     getFriendRequests: builder.query({
-      query: () => "/get-friend-requests",
-      providesTags: ["FriendRequests"],
+      query: ({ page = 1, limit = 8 }) => ({
+        url: "/get-friend-requests",
+        params: { page, limit },
+      }),
+      providesTag: ["FriendRequests"],
     }),
     addFriend: builder.mutation({
       query: (friendId) => ({

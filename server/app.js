@@ -30,8 +30,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/assets", express.static(path.join(__dirname, "assets")));
-
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -43,9 +41,14 @@ app.use("/api/reel", RouterReel);
 app.use("/api/notif", RouterNotif);
 app.use("/api/chat", RouterChat);
 
-io.on("connection", (socket) => {
-  console.log("a user connected");
+app.use(express.static(path.join(__dirname, "../client/dist")));
+app.use("/assets", express.static(path.join(__dirname, "assets")));
 
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+});
+
+io.on("connection", (socket) => {
   socket.on("join", async (userId) => {
     socket.join(userId);
     socket.userId = userId;
@@ -69,6 +72,7 @@ io.on("connection", (socket) => {
         });
 
         const user = await User.findById(socket.userId).select("friends");
+
         if (user && user.friends) {
           user.friends.forEach((friendId) => {
             io.to(friendId.toString()).emit("status");
@@ -78,9 +82,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    console.log(`user ${socket.id} disconnected`);
-  });
+  // socket.on("disconnect", () => {
+  //   console.log(`user ${socket.id} disconnected`);
+  // });
 });
 
 export default server;

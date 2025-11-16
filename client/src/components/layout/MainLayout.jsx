@@ -98,59 +98,52 @@ const MainLayout = ({ children, activeTab, onTabChange, setSearchTerm }) => {
             zIndex: 10,
             width: "100%",
             padding: "20px 0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <Row gutter={[16, 26]}>
-            <Col xs={6}>
-              <Space
-                direction='vertical'
-                align='center'
-                style={{ width: "100%", cursor: "pointer" }}
-                onClick={() => onTabChange("1")} // Gunakan 'onTabChange' dari props
-              >
-                <HomeOutlined style={{ fontSize: 20 }} />
-                <Typography.Text>Home</Typography.Text>
-              </Space>
-            </Col>
+          <Space
+            direction='vertical'
+            align='center'
+            style={{ width: "100%" }}
+            onClick={() => onTabChange("1")} // Gunakan 'onTabChange' dari props
+          >
+            <HomeOutlined style={{ fontSize: 20 }} />
+            <Typography.Text>Home</Typography.Text>
+          </Space>
 
-            <Col xs={6}>
-              <Space
-                direction='vertical'
-                align='center'
-                style={{ width: "100%" }}
-                onClick={() => onTabChange("2")} // Gunakan 'onTabChange' dari props
-              >
-                <YoutubeOutlined style={{ fontSize: 20 }} />
-                <Typography.Text>Reels</Typography.Text>
-              </Space>
-            </Col>
+          <Space
+            direction='vertical'
+            align='center'
+            style={{ width: "100%" }}
+            onClick={() => onTabChange("2")} // Gunakan 'onTabChange' dari props
+          >
+            <YoutubeOutlined style={{ fontSize: 20 }} />
+            <Typography.Text>Reels</Typography.Text>
+          </Space>
 
-            <Col xs={6}>
-              <Badge count={unread?.totalUnreadCount}>
-                <Space
-                  direction='vertical'
-                  align='center'
-                  style={{ width: "100%" }}
-                  onClick={() => navigate("/chat")}
-                >
-                  <MessageOutlined style={{ fontSize: 20 }} />
-                  <Typography.Text>Chat</Typography.Text>
-                </Space>
-              </Badge>
-            </Col>
+          <Space
+            direction='vertical'
+            align='center'
+            style={{ width: "100%" }}
+            onClick={() => navigate("/chat")}
+          >
+            <Badge count={unread?.totalUnreadCount}>
+              <MessageOutlined style={{ fontSize: 20 }} />
+            </Badge>
+            <Typography.Text>Chat</Typography.Text>
+          </Space>
 
-            <Col xs={6}>
-              <Space
-                direction='vertical'
-                align='center'
-                style={{ width: "100%" }}
-                onClick={() => navigate(`/${user?.fullName}`)}
-              >
-                <Avatar src={user?.avatar} icon={<UserOutlined />} />
-                <Typography.Text>You</Typography.Text>
-              </Space>
-            </Col>
-          </Row>
+          <Space
+            direction='vertical'
+            align='center'
+            style={{ width: "100%" }}
+            onClick={() => navigate(`/${user?.fullName}`)}
+          >
+            <Avatar size={"small"} src={user?.avatar} icon={<UserOutlined />} />
+            <Typography.Text>You</Typography.Text>
+          </Space>
         </Footer>
       )}
     </Layout>

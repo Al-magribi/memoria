@@ -1,5 +1,22 @@
 import mongoose from "mongoose";
 
+const replySchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    text: {
+      type: String,
+      trim: true,
+      required: [true, "Reply text is required"],
+    },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  },
+  { timestamps: true }
+);
+
 const commentSchema = new mongoose.Schema(
   {
     user: {
@@ -13,14 +30,10 @@ const commentSchema = new mongoose.Schema(
       required: [true, "Comment text is required"],
     },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    replies: [replySchema],
   },
   { timestamps: true }
 );
-
-// Enable recursive replies by adding the field after definition
-commentSchema.add({
-  replies: [commentSchema],
-});
 
 const ReelSchema = new mongoose.Schema(
   {

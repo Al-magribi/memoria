@@ -174,7 +174,7 @@ const Chat = () => {
       <Card
         style={{
           width: "100%",
-          height: "100%",
+          height: !screens.md ? "80vh" : "100%",
           overflow: "hidden",
         }}
         styles={{ body: { padding: 0, height: "100%" } }}

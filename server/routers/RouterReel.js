@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { compressVideo } from "../utils/VideoCompress.js";
+import { emitToFriends } from "../utils/SocketHelper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +54,8 @@ router.post(
       });
 
       await newReel.save();
+
+      await emitToFriends(req, userId, "reel");
 
       res.status(201).json({ message: "Reel created successfully" });
     } catch (error) {
@@ -138,6 +141,8 @@ router.put(
       reel.caption = caption;
       await reel.save();
 
+      await emitToFriends(req, req.user.id, "reel");
+
       res.status(200).json({ message: "Reel updated successfully", reel });
     } catch (error) {
       console.error(error);
@@ -167,6 +172,8 @@ router.delete("/:reelId", verify(), async (req, res) => {
 
     await reel.deleteOne();
 
+    await emitToFriends(req, req.user.id, "reel");
+
     res.status(200).json({ message: "Reel deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -192,6 +199,9 @@ router.post("/:reelId/like", verify(), async (req, res) => {
     }
 
     await reel.save();
+
+    await emitToFriends(req, userId, "reel");
+
     res.status(200).json({ message: "Reel like status updated", reel });
   } catch (error) {
     console.error(error);
@@ -216,8 +226,42 @@ router.post("/:reelId/comments", verify(), async (req, res) => {
     };
 
     reel.comments.push(comment);
+
     await reel.save();
+
+    await emitToFriends(req, userId, "reel");
+
     res.status(201).json({ message: "Comment added", reel });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update comment
+router.put("/:reelId/comments/:commentId", verify(), async (req, res) => {
+  try {
+    const { text } = req.body;
+    const reel = await Reel.findById(req.params.reelId);
+    if (!reel) {
+      return res.status(404).json({ message: "Reel not found" });
+    }
+
+    const comment = reel.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    comment.text = text;
+    await reel.save();
+
+    await emitToFriends(req, req.user.id, "reel");
+
+    res.status(200).json({ message: "Comment updated", reel });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
@@ -242,7 +286,11 @@ router.delete("/:reelId/comments/:commentId", verify(), async (req, res) => {
     }
 
     comment.deleteOne();
+
     await reel.save();
+
+    await emitToFriends(req, req.user.id, "reel");
+
     res.status(200).json({ message: "Comment deleted", reel });
   } catch (error) {
     console.error(error);
@@ -275,8 +323,51 @@ router.post(
       };
 
       comment.replies.push(reply);
+
       await reel.save();
+
+      await emitToFriends(req, userId, "reel");
+
       res.status(201).json({ message: "Reply added", reel });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// Update reply
+router.put(
+  "/:reelId/comments/:commentId/replies/:replyId",
+  verify(),
+  async (req, res) => {
+    try {
+      const { text } = req.body;
+      const reel = await Reel.findById(req.params.reelId);
+      if (!reel) {
+        return res.status(404).json({ message: "Reel not found" });
+      }
+
+      const comment = reel.comments.id(req.params.commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+
+      const reply = comment.replies.id(req.params.replyId);
+      if (!reply) {
+        return res.status(404).json({ message: "Reply not found" });
+      }
+
+      if (reply.user.toString() !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      reply.text = text;
+      await reel.save();
+
+      await emitToFriends(req, req.user.id, "reel");
+
+      res.status(200).json({ message: "Reply updated", reel });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: error.message });
@@ -310,7 +401,11 @@ router.delete(
       }
 
       reply.deleteOne();
+
       await reel.save();
+
+      await emitToFriends(req, req.user.id, "reel");
+
       res.status(200).json({ message: "Reply deleted", reel });
     } catch (error) {
       console.error(error);

@@ -50,6 +50,14 @@ export const ApiReel = createApi({
       }),
       invalidatesTags: ["Reels"],
     }),
+    updateComment: builder.mutation({
+      query: ({ reelId, commentId, text }) => ({
+        url: `/${reelId}/comments/${commentId}`,
+        method: "PUT",
+        body: { text },
+      }),
+      invalidatesTags: ["Reels"],
+    }),
     deleteComment: builder.mutation({
       query: ({ reelId, commentId }) => ({
         url: `/${reelId}/comments/${commentId}`,
@@ -61,6 +69,14 @@ export const ApiReel = createApi({
       query: ({ reelId, commentId, text }) => ({
         url: `/${reelId}/comments/${commentId}/replies`,
         method: "POST",
+        body: { text },
+      }),
+      invalidatesTags: ["Reels"],
+    }),
+    updateReply: builder.mutation({
+      query: ({ reelId, commentId, replyId, text }) => ({
+        url: `/${reelId}/comments/${commentId}/replies/${replyId}`,
+        method: "PUT",
         body: { text },
       }),
       invalidatesTags: ["Reels"],
@@ -86,8 +102,10 @@ export const {
   useDeleteReelMutation,
   useLikeReelMutation,
   useAddCommentMutation,
+  useUpdateCommentMutation, // --- BARU ---
   useDeleteCommentMutation,
   useAddReplyMutation,
+  useUpdateReplyMutation, // --- BARU ---
   useDeleteReplyMutation,
   useGetReelByIdQuery,
 } = ApiReel;

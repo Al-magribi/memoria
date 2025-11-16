@@ -470,32 +470,4 @@ router.post("/logout", verify(), async (req, res) => {
   }
 });
 
-router.get("/anything", verify(), async (req, res) => {
-  try {
-    const { search } = req.query;
-
-    let result;
-
-    const searchRegex = new RegExp(search, "i");
-
-    const [users, posts] = await Promise.all([
-      // Cari Users: Gunakan static method 'searchUsers' yang sudah ada
-      User.searchUsers(search, 10), // (query, limit)
-
-      // Cari Posts: Cari berdasarkan 'content'
-      Post.find({ content: searchRegex })
-        .select("content user createdAt") // Pilih data minimal
-        .limit(10), // Batasi hasil
-      // .populate('user') tidak perlu karena sudah ada di pre-hook PostSchema
-
-      // Cari Reels: Cari berdasarkan 'caption'
-    ]);
-
-    res.status(200).json({ users, posts });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
 export default router;

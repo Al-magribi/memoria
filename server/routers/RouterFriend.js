@@ -26,11 +26,21 @@ router.get("/get-online-friends", verify(), async (req, res) => {
 router.get("/get-users", verify(), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 8;
+    const limit = 8;
     const skip = (page - 1) * limit;
 
     // Ambil istilah pencarian dari query string
     const searchTerm = req.query.search || "";
+
+    // --- PERUBAHAN DIMULAI DI SINI ---
+    // 1. Dapatkan data teman dan permintaan dari user saat ini
+    const currentUser = await User.findById(req.user._id)
+      .select("friends friendRequests")
+      .lean();
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // --- PERUBAHAN SELESAI ---
 
     // Find users to whom the current user has sent a request
     const usersWithMyRequest = await User.find({
@@ -45,7 +55,13 @@ router.get("/get-users", verify(), async (req, res) => {
 
     // 1. Buat filter dasar
     const queryFilter = {
-      _id: { $ne: req.user._id }, // Selalu kecualikan diri sendiri
+      _id: {
+        $ne: req.user._id, // Selalu kecualikan diri sendiri
+        // --- PERUBAHAN DIMULAI DI SINI ---
+        // Kecualikan teman & orang yang sudah mengirim request
+        $nin: [...currentUser.friends, ...currentUser.friendRequests],
+        // --- PERUBAHAN SELESAI ---
+      },
     };
 
     // 2. Jika ada 'searchTerm', tambahkan filter $or untuk mencari
@@ -83,26 +99,78 @@ router.get("/get-users", verify(), async (req, res) => {
 });
 
 // Get all friends of the current user
+// Get all friends of the current user (PAGINATED)
 router.get("/get-my-friends", verify(), async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-      .populate("friends", "firstName lastName username avatar")
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip = (page - 1) * limit;
+
+    // 1. Dapatkan user dan *hanya* array ID temannya
+    const user = await User.findById(req.user._id).select("friends").lean();
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 2. Dapatkan total jumlah teman untuk logika 'hasMore'
+    const totalFriends = user.friends.length;
+
+    // 3. Cari dokumen User yang ID-nya ada di array 'user.friends',
+    //    lalu terapkan paginasi (skip/limit) pada query tersebut.
+    const friends = await User.find({
+      _id: { $in: user.friends },
+    })
+      .select("firstName lastName username avatar")
+      .skip(skip)
+      .limit(limit)
       .lean();
-    res.json({ friends: user.friends });
+
+    // 4. Kirim respons yang sama formatnya dengan get-users
+    res.json({
+      friends: friends,
+      totalFriends: totalFriends,
+      hasMore: page * limit < totalFriends,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Get all friend requests for the current user
+// Get all friend requests for the current user (PAGINATED)
 router.get("/get-friend-requests", verify(), async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip = (page - 1) * limit;
+
+    // 1. Dapatkan user dan *hanya* array ID friendRequests
     const user = await User.findById(req.user._id)
-      .populate("friendRequests", "firstName lastName username avatar")
+      .select("friendRequests")
+      .lean();
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 2. Dapatkan total jumlah permintaan
+    const totalRequests = user.friendRequests.length;
+
+    // 3. Cari dokumen User yang ID-nya ada di 'user.friendRequests',
+    //    lalu terapkan paginasi (skip/limit).
+    const friendRequests = await User.find({
+      _id: { $in: user.friendRequests },
+    })
+      .select("firstName lastName username avatar")
+      .skip(skip)
+      .limit(limit)
       .lean();
 
-    res.json({ friendRequests: user.friendRequests });
+    // 4. Kirim respons
+    res.json({
+      friendRequests: friendRequests,
+      totalRequests: totalRequests,
+      hasMore: page * limit < totalRequests,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });

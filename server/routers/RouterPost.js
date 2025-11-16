@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import User from "../schema/UserSchema.js";
 import { compressVideo } from "../utils/VideoCompress.js";
 import { compressImage } from "../utils/ImageCompress.js";
+import { emitToFriends } from "../utils/SocketHelper.js";
 import Notif from "../schema/NotifSchema.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,14 +72,7 @@ router.post(
 
       await newPost.save();
 
-      const user = await User.findById(userId).select("friends");
-
-      if (user && user.friends.length > 0) {
-        const io = req.io;
-        user.friends.forEach(async (friendId) => {
-          io.to(friendId.toString()).emit("post");
-        });
-      }
+      await emitToFriends(req, userId, "post");
 
       res.status(201).json({ message: "Post created successfully" });
     } catch (error) {
@@ -158,6 +152,8 @@ router.put("/:postId", verify(), upload.array("files"), async (req, res) => {
 
     await post.save();
 
+    await emitToFriends(req, userId, "post");
+
     res.status(200).json({ message: "Post updated successfully" });
   } catch (error) {
     console.log(error);
@@ -189,6 +185,8 @@ router.delete("/:postId", verify(), async (req, res) => {
 
     await post.deleteOne();
 
+    await emitToFriends(req, req.user.id, "post");
+
     res.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     console.log(error);
@@ -212,6 +210,7 @@ router.get("/my-posts", verify(), async (req, res) => {
       images: post.media.filter((m) => m.type === "image"),
       videos: post.media.filter((m) => m.type === "video"),
       likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
       comments: post.commentsCount,
       shares: post.sharesCount,
       location: post.location,
@@ -256,6 +255,7 @@ router.get("/user-posts/:userId", verify(), async (req, res) => {
       images: post.media.filter((m) => m.type === "image"),
       videos: post.media.filter((m) => m.type === "video"),
       likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
       comments: post.commentsCount,
       shares: post.sharesCount,
       location: post.location,
@@ -312,6 +312,7 @@ router.get("/feed", verify(), async (req, res) => {
       images: post.media.filter((m) => m.type === "image"),
       videos: post.media.filter((m) => m.type === "video"),
       likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
       comments: post.commentsCount,
       shares: post.sharesCount,
       location: post.location,
@@ -344,6 +345,9 @@ router.get("/feed", verify(), async (req, res) => {
 router.post("/:postId/like", verify(), async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);
+
+    console.log(req.params.postId);
+
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -362,7 +366,8 @@ router.post("/:postId/like", verify(), async (req, res) => {
           targetPost: post._id,
         });
         await notif.save();
-        req.io.to(post.user.toString()).emit("notification", notif);
+
+        await emitToFriends(req, userId, "notification");
       }
     } else {
       // Unlike the post
@@ -370,7 +375,17 @@ router.post("/:postId/like", verify(), async (req, res) => {
     }
 
     await post.save();
-    res.status(200).json({ message: "Post like status updated", post });
+
+    await emitToFriends(req, userId, "post");
+
+    res.status(200).json({
+      message: "Post like status updated",
+      post: {
+        id: post._id,
+        likes: post.likesCount,
+        isLiked: post.likes.includes(req.user.id),
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -406,6 +421,8 @@ router.post("/:postId/comments", verify(), async (req, res) => {
       req.io.to(post.user.toString()).emit("notification", notif);
     }
 
+    await emitToFriends(req, userId, "post");
+
     res.status(201).json({ message: "Comment added", post });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -432,6 +449,9 @@ router.put("/:postId/comments/:commentId", verify(), async (req, res) => {
     const { text } = req.body;
     comment.text = text;
     await post.save();
+
+    await emitToFriends(req, userId, "post");
+
     res.status(200).json({ message: "Comment updated", post });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -457,6 +477,9 @@ router.delete("/:postId/comments/:commentId", verify(), async (req, res) => {
 
     comment.deleteOne();
     await post.save();
+
+    await emitToFriends(req, userId, "post");
+
     res.status(200).json({ message: "Comment deleted", post });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -488,7 +511,11 @@ router.post(
       };
 
       comment.replies.push(reply);
+
       await post.save();
+
+      await emitToFriends(req, userId, "post");
+
       res.status(201).json({ message: "Reply added", post });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -524,6 +551,9 @@ router.put(
       const { text } = req.body;
       reply.text = text;
       await post.save();
+
+      await emitToFriends(req, userId, "post");
+
       res.status(200).json({ message: "Reply updated", post });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -557,7 +587,11 @@ router.delete(
       }
 
       reply.deleteOne();
+
       await post.save();
+
+      await emitToFriends(req, userId, "post");
+
       res.status(200).json({ message: "Reply deleted", post });
     } catch (error) {
       console.log(error);
@@ -582,6 +616,56 @@ router.get("/get-my-posts", verify(), async (req, res) => {
       images: post.media.filter((m) => m.type === "image"),
       videos: post.media.filter((m) => m.type === "video"),
       likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
+      comments: post.commentsCount,
+      shares: post.sharesCount,
+      location: post.location,
+      commentsData: post.comments.map((comment) => ({
+        id: comment._id,
+        user: comment.user.fullName,
+        avatar: comment.user.avatar,
+        text: comment.text,
+        likes: comment.likes.length,
+        timestamp: comment.createdAt,
+        replies: comment.replies.map((reply) => ({
+          id: reply._id,
+          user: reply.user.fullName,
+          avatar: reply.user.avatar,
+          text: reply.text,
+          likes: reply.likes.length,
+          timestamp: reply.createdAt,
+        })),
+      })),
+    }));
+
+    res.status(200).json(formattedPosts);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/anything", verify(), async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    const searchRegex = new RegExp(search, "i");
+
+    const posts = await Post.find({ content: searchRegex, privacy: "public" })
+      .populate("user", "fullName avatar")
+      .sort({ createdAt: -1 });
+
+    const formattedPosts = posts.map((post) => ({
+      id: post._id,
+      user: post.user,
+      fullName: post.user.fullName,
+      avatar: post.user.avatar,
+      timestamp: post.createdAt,
+      content: post.content,
+      images: post.media.filter((m) => m.type === "image"),
+      videos: post.media.filter((m) => m.type === "video"),
+      likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
       comments: post.commentsCount,
       shares: post.sharesCount,
       location: post.location,

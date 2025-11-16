@@ -25,7 +25,10 @@ import TimeAgo from "javascript-time-ago";
 import { useSelector } from "react-redux";
 import AddPost from "./AddPost";
 
-import { useDeletePostMutation } from "../../../service/post/ApiPost";
+import {
+  useDeletePostMutation,
+  useLikePostMutation,
+} from "../../../service/post/ApiPost";
 import { Modal } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 
@@ -37,6 +40,7 @@ const PostCard = ({ post, isLoading }) => {
   const { user } = useSelector((state) => state.user);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletePost] = useDeletePostMutation();
+  const [likePost] = useLikePostMutation();
 
   const handleDelete = () => {
     Modal.confirm({
@@ -71,17 +75,10 @@ const PostCard = ({ post, isLoading }) => {
     menuItems.push({ key: "delete", label: "Delete Post", danger: true });
   }
 
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
 
   const handleLikeClick = () => {
-    if (isLiked) {
-      setLikeCount(likeCount - 1);
-    } else {
-      setLikeCount(likeCount + 1);
-    }
-    setIsLiked(!isLiked);
+    likePost(post.id);
   };
 
   const handleCommentClick = () => {
@@ -146,7 +143,7 @@ const PostCard = ({ post, isLoading }) => {
         <Flex justify='space-between' style={{ marginTop: 16 }}>
           <Flex align='center' gap={4}>
             <LikeFilled style={{ color: "#1890ff" }} />
-            <Text type='secondary'>{likeCount}</Text>
+            <Text type='secondary'>{post.likes}</Text>
           </Flex>
           <Text type='secondary'>
             {post.comments > 0 && `${post.comments} comments`}
@@ -159,10 +156,10 @@ const PostCard = ({ post, isLoading }) => {
 
         <Flex>
           <ActionButton
-            icon={isLiked ? <LikeFilled /> : <LikeOutlined />}
+            icon={post.isLiked ? <LikeFilled /> : <LikeOutlined />}
             text='Like'
             onClick={handleLikeClick}
-            active={isLiked}
+            active={post.isLiked}
           />
           <ActionButton
             icon={<MessageOutlined />}
