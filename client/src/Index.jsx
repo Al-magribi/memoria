@@ -1,14 +1,14 @@
-import { Grid } from "antd";
 import Posts from "./components/center/posts/Posts";
 import { useState, useEffect } from "react";
 import Reels from "./components/center/reels/Reels";
 import MainLayout from "./components/layout/MainLayout";
 import { useSearchEverythingQuery } from "./service/post/ApiPost";
-
-const { useBreakpoint } = Grid;
+import { useSearchParams } from "react-router-dom";
 
 const Index = () => {
-  const screens = useBreakpoint();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const postId = searchParams.get("postId");
+
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem("activeTab") || "1";
   });
@@ -21,8 +21,14 @@ const Index = () => {
   );
 
   useEffect(() => {
-    localStorage.setItem("activeTab", activeTab);
-  }, [activeTab]);
+    if (postId) {
+      // Jika ada postId, JANGAN simpan activeTab, malah hapus saja biar bersih
+      localStorage.removeItem("activeTab");
+    } else {
+      // Jika TIDAK ada postId, baru simpan activeTab
+      localStorage.setItem("activeTab", activeTab);
+    }
+  }, [activeTab, postId]); // Tambahkan postId ke dependency array
 
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -39,12 +45,13 @@ const Index = () => {
   }, []);
 
   const handleTabChange = (key) => {
+    setSearchParams({});
     setActiveTab(key);
   };
 
   return (
     <MainLayout
-      activeTab={activeTab}
+      activeTab={postId ? "0" : activeTab}
       onTabChange={handleTabChange}
       setSearchTerm={setSearchTerm}
     >
@@ -59,6 +66,7 @@ const Index = () => {
             results={data}
             searchTerm={searchTerm}
             isLoadingSearch={isLoading} // Kirim status loading pencarian
+            postId={postId}
           />
         ) : (
           <Reels />

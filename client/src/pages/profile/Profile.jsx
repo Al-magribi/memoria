@@ -20,8 +20,8 @@ import MainLayout from "../../components/layout/MainLayout";
 import AddPost from "../../components/center/posts/AddPost";
 import PostCard from "../../components/center/posts/PostCard";
 import About from "./About";
-import Friends from "./Friends";
 import Photos from "./Photos";
+import MyFriends from "../friends/MyFriends";
 import {
   useGetProfileQuery,
   useLoadUserQuery,
@@ -191,7 +191,7 @@ const Profile = () => {
       ),
     },
     { key: "2", label: "About", children: <About /> },
-    { key: "3", label: "Friends", children: <Friends /> },
+    { key: "3", label: "Friends", children: <MyFriends /> },
     { key: "4", label: "Photos", children: <Photos /> },
   ];
 

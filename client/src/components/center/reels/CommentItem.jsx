@@ -14,8 +14,6 @@ import {
 import TimeAgo from "javascript-time-ago";
 import ReplayItem from "./ReplyItem";
 
-TimeAgo.addDefaultLocale(id);
-
 const { Text, Paragraph } = Typography;
 
 const CommentItem = ({ comment, reelId }) => {

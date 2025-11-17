@@ -9,6 +9,7 @@ import {
   Dropdown,
   Tag,
   Space,
+  message,
 } from "antd";
 import {
   LikeOutlined,
@@ -83,6 +84,11 @@ const PostCard = ({ post, isLoading }) => {
 
   const handleCommentClick = () => {
     setShowComments(!showComments);
+  };
+
+  const handleShareClick = () => {
+    const shareUrl = `${window.location.origin}?postId=${post.id}`;
+    navigator.clipboard.writeText(shareUrl);
   };
 
   const ActionButton = ({ icon, text, onClick, active }) => (
@@ -166,7 +172,11 @@ const PostCard = ({ post, isLoading }) => {
             text='Comment'
             onClick={handleCommentClick}
           />
-          <ActionButton icon={<ShareAltOutlined />} text='Share' />
+          <ActionButton
+            icon={<ShareAltOutlined />}
+            text='Share'
+            onClick={handleShareClick}
+          />
         </Flex>
 
         {showComments && (

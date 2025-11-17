@@ -65,10 +65,10 @@ const App = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
+        <Route path='/' element={<Index />} />
         <Route path='/signin' element={<Signin />} />
         <Route path='/signup' element={<Signup />} />
         <Route path='/activation/:code' element={<Activation />} />
-        <Route path='/' element={<Index />} />
         <Route path='/chat' element={<Chat />} />
         <Route path='/:fullName' element={<Profile />} />
         <Route path='/friends' element={<Friends />} />

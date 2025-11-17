@@ -43,6 +43,10 @@ export const ApiPost = createApi({
       query: () => "/feed",
       providesTags: ["Posts"],
     }),
+    getSinglePost: builder.query({
+      query: (postId) => `/${postId}`,
+      providesTags: ["Posts"],
+    }),
     likePost: builder.mutation({
       query: (postId) => ({
         url: `/${postId}/like`,
@@ -112,6 +116,7 @@ export const {
   useUpdatePostMutation,
   useGetPostsByUserIdQuery,
   useGetFeedQuery,
+  useGetSinglePostQuery,
   useDeletePostMutation,
   useLikePostMutation,
   useAddCommentMutation,

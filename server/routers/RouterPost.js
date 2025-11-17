@@ -341,6 +341,58 @@ router.get("/feed", verify(), async (req, res) => {
   }
 });
 
+router.get("/:postId", verify(), async (req, res) => {
+  try {
+    console.log(req.params.postId);
+
+    const post = await Post.findById(req.params.postId).populate(
+      "user",
+      "fullName avatar"
+    );
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const formattedPost = {
+      id: post._id,
+      user: post.user,
+      fullName: post.user.fullName,
+      avatar: post.user.avatar,
+      timestamp: post.createdAt,
+      content: post.content,
+      images: post.media.filter((m) => m.type === "image"),
+      videos: post.media.filter((m) => m.type === "video"),
+      likes: post.likesCount,
+      isLiked: post.likes.includes(req.user.id),
+      comments: post.commentsCount,
+      shares: post.sharesCount,
+      location: post.location,
+      commentsData: post.comments.map((comment) => ({
+        id: comment._id,
+        user: comment.user.fullName,
+        avatar: comment.user.avatar,
+        text: comment.text,
+        likes: comment.likes.length,
+        timestamp: comment.createdAt,
+        replies: comment.replies.map((reply) => ({
+          id: reply._id,
+          user: reply.user.fullName,
+          avatar: reply.user.avatar,
+          text: reply.text,
+          likes: reply.likes.length,
+          timestamp: reply.createdAt,
+        })),
+      })),
+    };
+
+    res.status(200).json(formattedPost);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Like/Unlike a post
 router.post("/:postId/like", verify(), async (req, res) => {
   try {
@@ -599,51 +651,6 @@ router.delete(
     }
   }
 );
-
-router.get("/get-my-posts", verify(), async (req, res) => {
-  try {
-    const posts = await Post.find({ user: req.user.id })
-      .populate("user", "fullName avatar")
-      .sort({ createdAt: -1 });
-
-    const formattedPosts = posts.map((post) => ({
-      id: post._id,
-      user: post.user,
-      fullName: post.user.fullName,
-      avatar: post.user.avatar,
-      timestamp: post.createdAt,
-      content: post.content,
-      images: post.media.filter((m) => m.type === "image"),
-      videos: post.media.filter((m) => m.type === "video"),
-      likes: post.likesCount,
-      isLiked: post.likes.includes(req.user.id),
-      comments: post.commentsCount,
-      shares: post.sharesCount,
-      location: post.location,
-      commentsData: post.comments.map((comment) => ({
-        id: comment._id,
-        user: comment.user.fullName,
-        avatar: comment.user.avatar,
-        text: comment.text,
-        likes: comment.likes.length,
-        timestamp: comment.createdAt,
-        replies: comment.replies.map((reply) => ({
-          id: reply._id,
-          user: reply.user.fullName,
-          avatar: reply.user.avatar,
-          text: reply.text,
-          likes: reply.likes.length,
-          timestamp: reply.createdAt,
-        })),
-      })),
-    }));
-
-    res.status(200).json(formattedPosts);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
-  }
-});
 
 router.get("/anything", verify(), async (req, res) => {
   try {

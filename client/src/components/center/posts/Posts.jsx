@@ -5,10 +5,11 @@ import { useGetFeedQuery } from "../../../service/post/ApiPost";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { useSocket } from "../../../context/SocketContext";
+import SinglePost from "./SinglePost";
 
 const { Title, Text } = Typography;
 
-const Posts = ({ results, searchTerm, isLoadingSearch }) => {
+const Posts = ({ results, searchTerm, isLoadingSearch, postId }) => {
   const socket = useSocket();
 
   // Ini adalah state untuk FEED UTAMA
@@ -25,6 +26,14 @@ const Posts = ({ results, searchTerm, isLoadingSearch }) => {
       return () => socket.off("post", handlePost);
     }
   }, [socket, refetch]);
+
+  if (postId) {
+    return (
+      <Flex vertical gap={"large"} style={{ width: "100%" }}>
+        <SinglePost postId={postId} />
+      </Flex>
+    );
+  }
 
   const renderFeedContent = () => {
     // --- JALUR 1: MODE PENCARIAN AKTIF ---
