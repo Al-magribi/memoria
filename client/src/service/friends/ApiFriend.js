@@ -38,7 +38,7 @@ export const ApiFriend = createApi({
         url: `/add-friend/${friendId}`,
         method: "POST",
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ["Friends", "Users", "FriendRequests"],
     }),
     acceptFriend: builder.mutation({
       query: (friendId) => ({
@@ -52,21 +52,21 @@ export const ApiFriend = createApi({
         url: `/reject-friend/${friendId}`,
         method: "POST",
       }),
-      invalidatesTags: ["FriendRequests", "Users"],
+      invalidatesTags: ["Friends", "Users", "FriendRequests"],
     }),
     cancelRequest: builder.mutation({
       query: (friendId) => ({
         url: `/cancel-request/${friendId}`,
         method: "POST",
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ["Friends", "Users", "FriendRequests"],
     }),
     removeFriend: builder.mutation({
       query: (friendId) => ({
         url: `/remove-friend/${friendId}`,
         method: "PUT",
       }),
-      invalidatesTags: ["Friends", "Users"],
+      invalidatesTags: ["Friends", "Users", "FriendRequests"],
     }),
   }),
 });

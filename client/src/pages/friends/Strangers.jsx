@@ -1,5 +1,4 @@
-// PeopleMayKnowTab.jsx
-
+// Strangers.jsx
 import React, {
   useState,
   useMemo,
@@ -7,7 +6,16 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { Input, Row, Col, Typography, Empty, Spin, Divider } from "antd";
+import {
+  Input,
+  Row,
+  Col,
+  Typography,
+  Empty,
+  Spin,
+  Divider,
+  message,
+} from "antd"; // Tambah message
 import { SearchOutlined } from "@ant-design/icons";
 import UserCard from "./UserCard";
 import {
@@ -20,7 +28,6 @@ import { useSocket } from "../../context/SocketContext";
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-// Hook kustom untuk menunda (debounce) sebuah nilai.
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -36,17 +43,13 @@ function useDebounce(value, delay) {
 
 const Strangers = () => {
   const socket = useSocket();
-
-  // --- State untuk Pencarian & Debouncing ---
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // --- State untuk Paginasi ---
   const [page, setPage] = useState(1);
   const [allProcessedUsers, setAllProcessedUsers] = useState([]);
   const [hasMore, setHasMore] = useState(true);
 
-  // --- Hook RTK Query ---
   const {
     data: usersData,
     isLoading,
@@ -60,55 +63,112 @@ const Strangers = () => {
   const [addFriend] = useAddFriendMutation();
   const [cancelRequest] = useCancelRequestMutation();
 
-  // MEMO: Proses data 'halaman baru' yang datang dari useGetUsersQuery
+  // --- LOGIKA OPTIMISTIC UI UPDATE (Agar tombol berubah instan) ---
+  const handleAddFriendLocal = async (userId) => {
+    // 1. Ubah UI secara instan (Optimistic)
+    setAllProcessedUsers((prev) =>
+      prev.map((user) =>
+        user._id === userId ? { ...user, status: "sent" } : user
+      )
+    );
+
+    // 2. Kirim request ke server
+    try {
+      await addFriend(userId).unwrap();
+      // Tidak perlu refetch/reload halaman, karena UI sudah update
+    } catch (error) {
+      // Jika gagal, kembalikan status (Rollback)
+      setAllProcessedUsers((prev) =>
+        prev.map((user) =>
+          user._id === userId ? { ...user, status: "add" } : user
+        )
+      );
+      message.error("Failed to add friend");
+    }
+  };
+
+  const handleCancelRequestLocal = async (userId) => {
+    // 1. Ubah UI secara instan
+    setAllProcessedUsers((prev) =>
+      prev.map((user) =>
+        user._id === userId ? { ...user, status: "add" } : user
+      )
+    );
+
+    try {
+      await cancelRequest(userId).unwrap();
+    } catch (error) {
+      setAllProcessedUsers((prev) =>
+        prev.map((user) =>
+          user._id === userId ? { ...user, status: "sent" } : user
+        )
+      );
+      message.error("Failed to cancel request");
+    }
+  };
+  // ---------------------------------------------------------------
+
   const newProcessedUsers = useMemo(() => {
     if (!usersData?.users) return [];
-
     const sentRequestIds = new Set(usersData?.sentRequests || []);
-
     return usersData.users.map((user) => {
       const hasSentRequest = sentRequestIds.has(user._id);
-      // Backend (dari perbaikan kita sebelumnya) sudah memfilter teman
-      // dan permintaan yang diterima, jadi kita hanya perlu cek 'sent'
       const status = hasSentRequest ? "sent" : "add";
       return { ...user, status };
     });
   }, [usersData]);
 
-  // EFFECT: Reset 'page' ke 1 jika 'debouncedSearchTerm' berubah
   useEffect(() => {
-    setPage(1); // Ini akan memicu query baru untuk halaman 1
-    setAllProcessedUsers([]); // Kosongkan list saat search
+    setPage(1);
+    setAllProcessedUsers([]);
   }, [debouncedSearchTerm]);
 
-  // EFFECT: Akumulasi 'newProcessedUsers' ke 'allProcessedUsers'
+  // --- PERBAIKAN LOGIKA MERGE DATA (Mengupdate status data lama) ---
   useEffect(() => {
     if (usersData?.hasMore !== undefined) {
       setHasMore(usersData.hasMore);
     }
-    const newUsers = newProcessedUsers; // Ambil dari memo
+    const newUsers = newProcessedUsers;
+
     if (newUsers.length > 0) {
       if (page === 1) {
         setAllProcessedUsers(newUsers);
       } else {
-        setAllProcessedUsers((prevUsers) => {
-          const existingIds = new Set(prevUsers.map((u) => u._id));
-          const newUsersToAdd = newUsers.filter((u) => !existingIds.has(u._id));
-          return [...prevUsers, ...newUsersToAdd];
+        setAllProcessedUsers((prev) => {
+          // Buat Map untuk data baru agar akses cepat
+          const newUsersMap = new Map(newUsers.map((u) => [u._id, u]));
+
+          // 1. Update user yang sudah ada di list (jika status berubah dari server)
+          const updatedPrev = prev.map((user) =>
+            newUsersMap.has(user._id) ? newUsersMap.get(user._id) : user
+          );
+
+          // 2. Filter user baru yang belum ada di list lama
+          const existingIds = new Set(prev.map((u) => u._id));
+          const purelyNewUsers = newUsers.filter(
+            (u) => !existingIds.has(u._id)
+          );
+
+          return [...updatedPrev, ...purelyNewUsers];
         });
       }
     } else if (page === 1) {
       setAllProcessedUsers([]);
     }
   }, [newProcessedUsers, page, usersData?.hasMore]);
+  // ---------------------------------------------------------------
 
-  // EFFECT: Socket listener
   useEffect(() => {
     if (socket) {
-      const handleNotification = () => {
-        // Reset ke halaman 1 dan refetch
-        setPage(1);
-        refetch();
+      const handleNotification = (data) => {
+        // Opsional: Cek tipe notifikasi agar tidak mereset scroll sembarangan
+        if (
+          data.type === "friend_request_accepted" ||
+          data.action === "was_removed_as_friend"
+        ) {
+          // Logic update spesifik jika diperlukan, atau refetch background
+          refetch();
+        }
       };
       socket.on("notification", handleNotification);
       return () => {
@@ -117,7 +177,6 @@ const Strangers = () => {
     }
   }, [socket, refetch]);
 
-  // Logika Intersection Observer (Infinite Scroll)
   const observer = useRef();
   const lastElementRef = useCallback(
     (node) => {
@@ -166,8 +225,9 @@ const Strangers = () => {
                 <UserCard
                   user={user}
                   status={user.status}
-                  onAdd={() => addFriend(user._id)}
-                  onCancel={() => cancelRequest(user._id)}
+                  // GUNAKAN HANDLER LOKAL BARU
+                  onAdd={() => handleAddFriendLocal(user._id)}
+                  onCancel={() => handleCancelRequestLocal(user._id)}
                 />
               </Col>
             ))
@@ -175,20 +235,12 @@ const Strangers = () => {
               <Col span={24}>
                 <Empty
                   description={
-                    debouncedSearchTerm ? (
-                      <Text type='secondary'>
-                        User not found for "
-                        <strong>{debouncedSearchTerm}</strong>"
-                      </Text>
-                    ) : (
-                      <Text type='secondary'>No users to show.</Text>
-                    )
+                    debouncedSearchTerm ? "User not found" : "No users to show."
                   }
                 />
               </Col>
             )}
       </Row>
-
       {isFetching && page > 1 && (
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <Spin />

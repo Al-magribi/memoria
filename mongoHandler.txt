@@ -1,4 +1,7 @@
-mongodump --host=localhost --port=27017 --db=memoria --archive=memoria_backup.gz --gzip
+mongodump --host=localhost --port=27017 --username root --password Ij4wJb767MqRBMPJ --authenticationDatabase admin --db memoria --archive=memoria_backup.gz --gzip
 
 
-mongorestore --uri="mongodb://<user>:<password>@212.85.24.143:27017/" --archive=memoria_backup.gz --gzip
+mongorestore --uri="mongodb://root:ksVNueDQwZBkz80p@127.0.0.1:27017/" --archive=memoria_backup.gz --gzip
+
+
+mongorestore --uri="mongodb://localhost:27017/" --archive=memoria_backup.gz --gzip

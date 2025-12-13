@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Row, Col, Typography, Spin, Empty, Divider } from "antd";
+import { Row, Col, Typography, Spin, Empty, Divider, message } from "antd"; // Tambah message
 import UserCard from "./UserCard";
 import {
   useGetMyFriendsQuery,
@@ -7,7 +7,7 @@ import {
 } from "../../service/friends/ApiFriend";
 import { useSocket } from "../../context/SocketContext";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const MyFriends = () => {
   const socket = useSocket();
@@ -26,6 +26,24 @@ const MyFriends = () => {
     page: page,
     limit: 8,
   });
+
+  // --- LOGIKA BARU: Optimistic Remove ---
+  const handleRemoveLocal = async (userId) => {
+    // 1. Update UI Instan: Hapus teman dari list state lokal
+    setAllFriends((prev) => prev.filter((user) => user._id !== userId));
+
+    try {
+      // 2. Kirim request ke server
+      await removeFriend(userId).unwrap();
+      message.success("Friend removed.");
+    } catch (error) {
+      // 3. Jika gagal, refetch untuk mengembalikan data
+      console.error("Failed to remove friend:", error);
+      message.error("Failed to remove friend.");
+      refetch();
+    }
+  };
+  // --------------------------------------
 
   // Efek untuk mengakumulasi data paginasi
   useEffect(() => {
@@ -53,8 +71,9 @@ const MyFriends = () => {
   // Efek untuk socket listener
   useEffect(() => {
     if (socket) {
-      const handleNotification = () => {
-        // Reset ke halaman 1 dan refetch
+      const handleNotification = (data) => {
+        // Logika tambahan: Jika user ini dihapus oleh orang lain, refresh list
+        // (Pastikan backend mengirim action 'was_removed_as_friend' seperti di perbaikan backend sebelumnya)
         setPage(1);
         refetch();
       };
@@ -65,7 +84,7 @@ const MyFriends = () => {
     }
   }, [socket, refetch]);
 
-  // Logika Intersection Observer (Infinite Scroll)
+  // Logika Infinite Scroll
   const observer = useRef();
   const lastElementRef = useCallback(
     (node) => {
@@ -104,7 +123,8 @@ const MyFriends = () => {
                 <UserCard
                   user={user}
                   status='friend'
-                  onRemove={() => removeFriend(user._id)}
+                  // Perubahan: Gunakan handler lokal
+                  onRemove={() => handleRemoveLocal(user._id)}
                 />
               </Col>
             ))

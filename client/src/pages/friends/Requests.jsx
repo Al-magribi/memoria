@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Row, Col, Typography, Spin, Empty, Divider } from "antd";
+import { Row, Col, Typography, Spin, Empty, Divider, message } from "antd"; // Tambah message
 import UserCard from "./UserCard";
 import {
   useGetFriendRequestsQuery,
@@ -8,7 +8,7 @@ import {
 } from "../../service/friends/ApiFriend";
 import { useSocket } from "../../context/SocketContext";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const Requests = () => {
   const socket = useSocket();
@@ -16,6 +16,7 @@ const Requests = () => {
   const [allRequests, setAllRequests] = useState([]);
   const [hasMore, setHasMore] = useState(true);
 
+  // Hook mutasi dari RTK Query
   const [acceptFriend] = useAcceptFriendMutation();
   const [rejectFriend] = useRejectFriendMutation();
 
@@ -28,6 +29,42 @@ const Requests = () => {
     page: page,
     limit: 8,
   });
+
+  // --- LOGIKA BARU: Optimistic UI Updates ---
+  // Fungsi ini menangani logika tampilan + server untuk Accept
+  const handleAcceptLocal = async (userId) => {
+    // 1. Update UI Instan: Hapus user dari list state lokal
+    setAllRequests((prev) => prev.filter((user) => user._id !== userId));
+
+    try {
+      // 2. Kirim request ke server
+      await acceptFriend(userId).unwrap();
+      message.success("Friend request accepted!");
+    } catch (error) {
+      // 3. Jika gagal, beri pesan error dan refetch untuk mengembalikan data
+      console.error("Failed to accept:", error);
+      message.error("Failed to accept friend request.");
+      refetch();
+    }
+  };
+
+  // Fungsi ini menangani logika tampilan + server untuk Reject
+  const handleRejectLocal = async (userId) => {
+    // 1. Update UI Instan: Hapus user dari list
+    setAllRequests((prev) => prev.filter((user) => user._id !== userId));
+
+    try {
+      // 2. Kirim request ke server
+      await rejectFriend(userId).unwrap();
+      message.info("Friend request declined.");
+    } catch (error) {
+      // 3. Jika gagal, refetch
+      console.error("Failed to reject:", error);
+      message.error("Failed to decline request.");
+      refetch();
+    }
+  };
+  // ------------------------------------------
 
   // Efek untuk mengakumulasi data paginasi
   useEffect(() => {
@@ -52,11 +89,11 @@ const Requests = () => {
     }
   }, [requestsData, page]);
 
-  // Efek untuk socket listener
+  // Efek untuk socket listener (Real-time notifikasi masuk)
   useEffect(() => {
     if (socket) {
       const handleNotification = () => {
-        // Reset ke halaman 1 dan refetch
+        // Jika ada notifikasi baru, reset ke halaman 1 dan ambil data terbaru
         setPage(1);
         refetch();
       };
@@ -67,7 +104,7 @@ const Requests = () => {
     }
   }, [socket, refetch]);
 
-  // Logika Intersection Observer (Infinite Scroll)
+  // Logika Infinite Scroll
   const observer = useRef();
   const lastElementRef = useCallback(
     (node) => {
@@ -106,8 +143,9 @@ const Requests = () => {
                 <UserCard
                   user={user}
                   status='received'
-                  onAccept={() => acceptFriend(user._id)}
-                  onReject={() => rejectFriend(user._id)}
+                  // Perubahan: Gunakan handler lokal, bukan langsung mutasi
+                  onAccept={() => handleAcceptLocal(user._id)}
+                  onReject={() => handleRejectLocal(user._id)}
                 />
               </Col>
             ))

@@ -142,7 +142,9 @@ const PostCard = ({ post, isLoading }) => {
           </Dropdown>
         </Flex>
 
-        <Paragraph style={{ marginTop: 16 }}>{post.content}</Paragraph>
+        <Paragraph style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
+          {post.content}
+        </Paragraph>
 
         <MediaGrid images={post.images} videos={post.videos} />
 

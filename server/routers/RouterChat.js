@@ -385,70 +385,78 @@ router.get("/get-unread-chats", verify(), async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Pipeline Agregasi untuk Notifikasi Pesan Belum Dibaca
     const pipeline = [
-      // 1. Ambil SEMUA pesan yang BUKAN dikirim oleh user, dan user BELUM membacanya
+      // 1. Ambil pesan yang BUKAN dari user dan BELUM dibaca user
       {
         $match: {
-          sender: { $ne: userId }, // Bukan pesan yang dikirim oleh saya
-          readBy: { $ne: userId }, // Saya belum ada di array readBy
+          sender: { $ne: userId },
+          readBy: { $ne: userId },
         },
       },
-      // 2. Kelompokkan berdasarkan 'conversation' ID
+      // 2. Kelompokkan berdasarkan Conversation ID
       {
         $group: {
-          _id: "$conversation", // Kelompokkan berdasarkan ID Konversasi
-          unreadCount: { $sum: 1 }, // Hitung total pesan yang belum dibaca di konversasi ini
+          _id: "$conversation",
+          unreadCount: { $sum: 1 },
         },
       },
-      // 3. Gabungkan (Lookup) data Konversasi
+      // 3. Ambil data Conversation
       {
         $lookup: {
-          from: "conversations", // Nama koleksi Conversation
-          localField: "_id", // ID Konversasi dari hasil $group
+          from: "conversations",
+          localField: "_id",
           foreignField: "_id",
           as: "conversationData",
         },
       },
-      // 4. Unwind (flat) data konversasi
+      // 4. Unwind data conversation
       {
         $unwind: "$conversationData",
       },
-      // 5. Gabungkan (Lookup) data Partisipan
+
+      // --- PERBAIKAN DI SINI ---
+      // 5. Filter: HANYA ambil jika userId ada di dalam array participants
+      // Ini mencegah user mendapat notif dari chat orang lain
+      {
+        $match: {
+          "conversationData.participants": userId,
+        },
+      },
+      // -------------------------
+
+      // 6. Ambil data User (Participant)
       {
         $lookup: {
-          from: "users", // Nama koleksi User
+          from: "users",
           localField: "conversationData.participants",
           foreignField: "_id",
           as: "participants",
         },
       },
-      // 6. Project/Format hasilnya
+      // 7. Project/Format hasil
       {
         $project: {
-          _id: 0, // Hapus _id dari $group
+          _id: 0,
           conversationId: "$_id",
           unreadCount: 1,
-          // Ambil partisipan lawan (bukan user yang sedang login)
           participant: {
             $filter: {
               input: "$participants",
               as: "p",
-              cond: { $ne: ["$$p._id", userId] }, // Partisipan yang BUKAN user ini
+              cond: { $ne: ["$$p._id", userId] },
             },
           },
         },
       },
-      // 7. Unwind lagi untuk mendapatkan objek Partisipan lawan yang spesifik (hanya 1 untuk chat 1-lawan-1)
+      // 8. Unwind participant
       {
         $unwind: { path: "$participant", preserveNullAndEmptyArrays: true },
       },
-      // 8. Project final (hanya data yang dibutuhkan)
+      // 9. Final Project
       {
         $project: {
           conversationId: 1,
           unreadCount: 1,
-          // Data user lawan untuk notifikasi (di kolom chat/navbar/contact)
           participant: {
             _id: "$participant._id",
             firstName: "$participant.firstName",
@@ -456,15 +464,12 @@ router.get("/get-unread-chats", verify(), async (req, res) => {
             avatar: "$participant.avatar",
             isLogin: "$participant.isLogin",
           },
-          // Total global unread count akan dihitung di client/setelah agregasi
         },
       },
     ];
 
-    // Jalankan agregasi pada koleksi Chat
     const unreadConversations = await Chat.aggregate(pipeline);
 
-    // Hitung Total Pesan Belum Dibaca secara Global (untuk Navbar)
     const totalUnreadCount = unreadConversations.reduce(
       (acc, item) => acc + item.unreadCount,
       0
